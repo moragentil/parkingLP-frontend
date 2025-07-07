@@ -4,11 +4,17 @@ const sharedStyles = StyleSheet.create({
   bgCustomBlue: {
     backgroundColor: '#3236FF',
   },
-  borderColor: {
+  bgCustomGreen: {
+    backgroundColor: '#16A34A',
+  },
+  borderColorBlue: {
     borderColor: '#3236FF',
   },
-  textColor: {
-    color: '#2B2B2B',
+  borderColorGreen:{
+    borderColor: '#16A34A',    
+  },
+  textColorGreen: {
+    color: '#16A34A',
   },
 });
 
