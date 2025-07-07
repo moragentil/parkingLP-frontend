@@ -1,25 +1,25 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import tw from '../utils/tailwind';
-import Header from '../components/Header';
-import Footer from '../components/Footer'; // Importar Footer
 import sharedStyles from '../utils/sharedStyles';
-import Ionicons from 'react-native-vector-icons/Ionicons'; // Importar Ionicons
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { MaterialIcons } from '@expo/vector-icons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
-export default function HomeScreen({ navigation }) {
+export default function HomeScreen() {
   return (
-    <View style={tw`flex-1 bg-gray-200`}>
+    <View style={tw`flex-1 m-4 bg-gray-200`}>
 
 
       {/* Mapa vacío */}
-      <View style={tw`flex items-center mx-4 mt-4 justify-center`}>
-        <View style={[tw`h-40 bg-white w-full border rounded-xl`, sharedStyles.borderColorBlue]} />
+      <View style={tw`flex items-center justify-center`}>
+        <View style={[tw`h-44 bg-white w-full border items-center rounded-xl`, sharedStyles.borderColorBlue]} >
+            <Text style={[tw` text-center mt-20`, sharedStyles.textColorBlue]}>Mapa Interactivo</Text>
+            </View>
       </View>
 
       {/* Ubicación detectada */}
-      <View style={[tw`bg-white rounded-lg p-4 mx-4 mt-4 shadow border-l-4`, sharedStyles.borderColorBlue]}>
+      <View style={[tw`bg-white rounded-lg p-4 mt-4 shadow border-l-4`, sharedStyles.borderColorBlue]}>
         <View style={tw`flex-row items-center mb-3`}>
           <Ionicons name="location-outline" size={24} color="blue" /> {/* Ícono de ubicación */}
           <Text style={tw`text-lg font-bold text-gray-800`}>Ubicación detectada</Text>
@@ -34,7 +34,7 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       {/* Zona detectada */}
-      <View style={[tw`bg-white rounded-lg p-4 mx-4 mt-4 shadow border-l-4`, sharedStyles.borderColorGreen]}>
+      <View style={[tw`bg-white rounded-lg p-4  mt-4 shadow border-l-4`, sharedStyles.borderColorGreen]}>
         <View style={tw`flex-row justify-between items-center mb-3`}>
         <View style={tw`flex-row items-center`}>
         <Ionicons name="map-outline" size={22} style={sharedStyles.textColorGreen} />
@@ -69,14 +69,14 @@ export default function HomeScreen({ navigation }) {
 
       </View>
 
-      <View style={tw`bg-gray-300 border border-gray-400 flex-row justify-center items-center rounded-lg p-2 mx-4 mt-4 shadow `}>
+      <View style={tw`bg-gray-300 border border-gray-400 flex-row justify-center items-center rounded-lg p-2 mt-4 shadow `}>
         <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800 `} />
         <Text style={tw`text-gray-800 text-base font-semibold `}>Sin estacionamiento activo</Text>
       </View>
 
 
       {/* Botones */}
-      <View style={tw`flex-row justify-between  ml-4 mr-6 mt-4`}>
+      <View style={tw`flex-row justify-between mr-2 mt-4`}>
         <TouchableOpacity style={[tw` mr-2 p-4 w-1/2 rounded-lg  `, sharedStyles.bgCustomBlue]}>
           <Text style={tw`text-white text-center font-bold`}>Pagar</Text>
         </TouchableOpacity>
@@ -85,8 +85,6 @@ export default function HomeScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {/* Footer */}
-      <Footer navigation={navigation} />
     </View>
   );
 }

@@ -19,6 +19,9 @@ const sharedStyles = StyleSheet.create({
   textColorGreen: {
     color: '#16A34A',
   },
+  textColorBlue: {
+    color: '#3236FF',
+  },
 });
 
 export default sharedStyles;
