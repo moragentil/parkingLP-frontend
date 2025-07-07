@@ -11,8 +11,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 export default function HomeScreen({ navigation }) {
   return (
     <View style={tw`flex-1 bg-gray-200`}>
-      {/* Header */}
-      <Header title="Parking LP" />
+
 
       {/* Mapa vacío */}
       <View style={tw`flex items-center mx-4 mt-4 justify-center`}>
