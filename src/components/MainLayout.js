@@ -64,7 +64,7 @@ export default function MainLayout() {
       <View style={tw`flex-1 bg-gray-200`}>{renderContent()}</View>
 
       {/* Footer */}
-      <Footer navigation={{ navigate: setCurrentScreen }} />
+      <Footer navigation={{ navigate: setCurrentScreen }} currentScreen={currentScreen} />
     </View>
   );
 }
