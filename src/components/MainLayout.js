@@ -55,6 +55,7 @@ export default function MainLayout() {
         isVisible={isMenuVisible}
         onClose={toggleMenu}
         navigation={{ navigate: setCurrentScreen }}
+        currentScreen={currentScreen}
       />
       {/* Header */}
       <Header title={getHeaderTitle()} onMenuPress={toggleMenu} />
