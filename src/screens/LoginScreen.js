@@ -9,7 +9,7 @@ export default function LoginScreen({ navigation }) {
 
   const handleLogin = () => {
     if (username === 'admin' && password === '1234') {
-      navigation.navigate('Home');
+      navigation.replace('MainLayout');
     } else {
       alert('Credenciales incorrectas');
     }

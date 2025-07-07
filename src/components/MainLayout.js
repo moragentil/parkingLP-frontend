@@ -10,7 +10,7 @@ import CarScreen from '../screens/CarScreen';
 import SettingsScreen from '../screens/SettingsScreen'; // Importa la nueva pantalla
 import SideMenu from './SideMenu';
 
-export default function MainLayout() {
+export default function MainLayout({ navigation }) { // Recibe la prop navigation
   const [currentScreen, setCurrentScreen] = useState('Home'); // Estado para manejar la pantalla actual
   const [isMenuVisible, setMenuVisible] = useState(false);
 
@@ -29,8 +29,8 @@ export default function MainLayout() {
         return <PayScreen />;
       case 'Car':
         return <CarScreen />;
-      case 'Settings': // Añade el caso para Settings
-        return <SettingsScreen navigation={{ navigate: setCurrentScreen }} />;
+      case 'Settings': // Pasa la prop de navegación a SettingsScreen
+        return <SettingsScreen navigation={navigation} />;
       default:
         return <HomeScreen navigation={{ navigate: setCurrentScreen }} />;
     }
@@ -59,7 +59,8 @@ export default function MainLayout() {
       <SideMenu
         isVisible={isMenuVisible}
         onClose={toggleMenu}
-        navigation={{ navigate: setCurrentScreen }}
+        navigation={navigation} // Pasa la prop de navegación a SideMenu
+        setCurrentScreen={setCurrentScreen}
         currentScreen={currentScreen}
       />
       {/* Header */}

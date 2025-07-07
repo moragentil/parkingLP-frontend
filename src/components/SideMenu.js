@@ -4,7 +4,7 @@ import tw from '../utils/tailwind';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import sharedStyles from '../utils/sharedStyles';
 
-export default function SideMenu({ isVisible, onClose, navigation, currentScreen }) {
+export default function SideMenu({ isVisible, onClose, navigation, setCurrentScreen, currentScreen }) {
   const menuItems = [
     { name: 'Home', label: 'Inicio', icon: 'home-outline' },
     { name: 'Map', label: 'Mapa interactivo', icon: 'map-outline' },
@@ -15,8 +15,12 @@ export default function SideMenu({ isVisible, onClose, navigation, currentScreen
   ];
 
   const handleNavigate = (screen) => {
-    navigation.navigate(screen);
     onClose();
+    if (screen === 'Login') {
+      navigation.replace('Login');
+    } else {
+      setCurrentScreen(screen);
+    }
   };
 
   return (
