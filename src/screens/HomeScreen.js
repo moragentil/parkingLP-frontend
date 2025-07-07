@@ -2,6 +2,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import tw from '../utils/tailwind';
 import Header from '../components/Header';
+import sharedStyles from '../utils/sharedStyles';
+import Ionicons from 'react-native-vector-icons/Ionicons'; // Importar Ionicons
+import { MaterialIcons } from '@expo/vector-icons';
+
 
 export default function HomeScreen() {
   return (
@@ -10,13 +14,23 @@ export default function HomeScreen() {
       <Header title="Parking LP" />
 
       {/* Mapa vacío */}
-      <View style={tw`h-48 bg-blue-200`} />
+      <View style={tw`flex items-center m-4 justify-center`}>
+        <View style={[tw`h-48 bg-white w-full border rounded-xl`, sharedStyles.borderColor]} />
+      </View>
 
       {/* Ubicación detectada */}
-      <View style={tw`bg-white rounded-lg p-4 m-4 shadow`}>
-        <Text style={tw`text-blue-500 text-lg font-bold mb-2`}>Ubicación detectada</Text>
-        <Text style={tw`text-gray-700`}>Av. 13 entre 48 y 49</Text>
+      <View style={[tw`bg-white rounded-lg p-4 m-4 shadow border-l-4`, sharedStyles.borderColor]}>
+        <View style={tw`flex-row items-center mb-3`}>
+          <Ionicons name="location-outline" size={24} color="blue" /> {/* Ícono de ubicación */}
+          <Text style={tw`text-lg font-bold text-gray-800`}>Ubicación detectada</Text>
+        </View>
+        <View style={tw`flex-row items-center mb-3`}>
+          <MaterialIcons name="my-location" size={16} color="green" style={tw`mr-2 ml-1`}/>
+          <Text style={tw`text-gray-800`}>Av. 13 entre 48 y 49</Text>
+        </View>
+         <View style={tw`flex-row items-center mx-2`}>
         <Text style={tw`text-gray-500`}>Detectado automáticamente</Text>
+        </View>
       </View>
 
       {/* Zona detectada */}
