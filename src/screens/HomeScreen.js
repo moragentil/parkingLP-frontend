@@ -13,7 +13,7 @@ export default function HomeScreen() {
 
       {/* Mapa vacío */}
       <View style={tw`flex items-center justify-center`}>
-        <View style={[tw`h-44 bg-white w-full border items-center rounded-xl`, sharedStyles.borderColorBlue]} >
+        <View style={[tw`h-44 bg-blue-100 w-full border items-center rounded-xl`, sharedStyles.borderColorBlue]} >
             <Text style={[tw` text-center mt-20`, sharedStyles.textColorBlue]}>Mapa Interactivo</Text>
             </View>
       </View>

@@ -10,6 +10,15 @@ const sharedStyles = StyleSheet.create({
   bgCustomGray: {
     backgroundColor: '#E2E2E2',
   },
+  bgCustomPink: {
+    backgroundColor: '#feccef',
+  },
+  bgCustomBlueLight: {
+    backgroundColor: '#c5d9fe',
+  },
+  bgCustomYellow: {
+    backgroundColor: '#fefebf',
+  },
   borderColorBlue: {
     borderColor: '#3236FF',
   },
@@ -18,6 +27,18 @@ const sharedStyles = StyleSheet.create({
   },
   textColorGreen: {
     color: '#16A34A',
+  },
+  textColorGreenDark: {
+    color: '#055907',
+  },
+  textColorPink: {
+    color: '#9a026d',
+  },
+  textColorBlueDark: {
+    color: '#063999',
+  },
+  textColorYellow: {
+    color: '#7f7f04',
   },
   textColorBlue: {
     color: '#3236FF',
