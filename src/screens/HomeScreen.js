@@ -2,14 +2,15 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import tw from '../utils/tailwind';
 import Header from '../components/Header';
+import Footer from '../components/Footer'; // Importar Footer
 import sharedStyles from '../utils/sharedStyles';
 import Ionicons from 'react-native-vector-icons/Ionicons'; // Importar Ionicons
 import { MaterialIcons } from '@expo/vector-icons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   return (
-    <View style={tw`flex-1 bg-gray-100`}>
+    <View style={tw`flex-1 bg-gray-200`}>
       {/* Header */}
       <Header title="Parking LP" />
 
@@ -69,27 +70,24 @@ export default function HomeScreen() {
 
       </View>
 
-      <View style={[tw`bg-gray-200 rounded-lg p-4 mx-4 mt-4 shadow border border-gray-500`]}>
-        <View style={tw`flex-col items-center`}>
-            <View style={tw`flex-row items-center mb-2`}>
-            <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-700`} />
-            <Text style={tw`text-lg font-bold text-gray-700 ml-2`}>Sin estacionamiento activo</Text>
-            </View>
-            <Text style={tw`text-gray-600 text-center`}>
-                Toca "Pagar" para iniciar
-            </Text>
-        </View>
+      <View style={tw`bg-gray-300 border border-gray-400 flex-row justify-center items-center rounded-lg p-2 mx-4 mt-4 shadow `}>
+        <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800 `} />
+        <Text style={tw`text-gray-800 text-base font-semibold `}>Sin estacionamiento activo</Text>
       </View>
 
+
       {/* Botones */}
-      <View style={tw`flex-row justify-around m-4`}>
-        <TouchableOpacity style={tw`bg-blue-500 rounded-lg py-2 px-4`}>
-          <Text style={tw`text-white font-bold`}>Pagar</Text>
+      <View style={tw`flex-row justify-between  ml-4 mr-6 mt-4`}>
+        <TouchableOpacity style={[tw` mr-2 p-4 w-1/2 rounded-lg  `, sharedStyles.bgCustomBlue]}>
+          <Text style={tw`text-white text-center font-bold`}>Pagar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={tw`bg-blue-500 rounded-lg py-2 px-4`}>
-          <Text style={tw`text-white font-bold`}>Zona Límite</Text>
+        <TouchableOpacity style={[tw` p-4 w-1/2 rounded-lg `, sharedStyles.bgCustomBlue]}>
+          <Text style={tw`text-white text-center font-bold`}>Zona Límite</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Footer */}
+      <Footer navigation={navigation} />
     </View>
   );
 }

@@ -7,6 +7,9 @@ const sharedStyles = StyleSheet.create({
   bgCustomGreen: {
     backgroundColor: '#16A34A',
   },
+  bgCustomGray: {
+    backgroundColor: '#E2E2E2',
+  },
   borderColorBlue: {
     borderColor: '#3236FF',
   },
