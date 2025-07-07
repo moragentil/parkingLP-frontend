@@ -7,9 +7,15 @@ import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
 import PayScreen from '../screens/PayScreen';
 import CarScreen from '../screens/CarScreen';
+import SideMenu from './SideMenu';
 
 export default function MainLayout() {
   const [currentScreen, setCurrentScreen] = useState('Home'); // Estado para manejar la pantalla actual
+  const [isMenuVisible, setMenuVisible] = useState(false);
+
+  const toggleMenu = () => {
+    setMenuVisible(!isMenuVisible);
+  };
 
   // Función para renderizar el contenido según la pantalla actual
   const renderContent = () => {
@@ -45,8 +51,13 @@ export default function MainLayout() {
 
   return (
     <View style={tw`flex-1`}>
+      <SideMenu
+        isVisible={isMenuVisible}
+        onClose={toggleMenu}
+        navigation={{ navigate: setCurrentScreen }}
+      />
       {/* Header */}
-      <Header title={getHeaderTitle()} />
+      <Header title={getHeaderTitle()} onMenuPress={toggleMenu} />
 
       {/* Contenido dinámico */}
       <View style={tw`flex-1 bg-gray-200`}>{renderContent()}</View>
