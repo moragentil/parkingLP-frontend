@@ -21,12 +21,12 @@ export default function HomeScreen() {
       {/* Ubicación detectada */}
       <View style={[tw`bg-white rounded-lg p-4 mt-4 shadow border-l-4`, sharedStyles.borderColorBlue]}>
         <View style={tw`flex-row items-center mb-3`}>
-          <Ionicons name="location-outline" size={24} color="blue" /> {/* Ícono de ubicación */}
+          <Text><Ionicons name="location-outline" size={24} color="blue" /> </Text>{/* Ícono de ubicación */}
           <Text style={tw`text-lg font-bold text-gray-800`}>Ubicación detectada</Text>
         </View>
-        <View style={tw`flex-row items-center mb-3`}>
-          <MaterialIcons name="my-location" size={16} color="green" style={tw`mr-2 ml-1`}/>
-          <Text style={tw`text-gray-800`}>Av. 13 entre 48 y 49</Text>
+        <View style={tw`flex-row items-center ml-1 mb-3`}>
+          <Text><MaterialIcons name="my-location" size={16} color="green" style={tw`mr-2 ml-1`}/></Text>
+          <Text style={tw`text-gray-800 ml-2`}>Av. 13 entre 48 y 49</Text>
         </View>
          <View style={tw`flex-row items-center mx-2`}>
         <Text style={tw`text-gray-500`}>Detectado automáticamente</Text>
@@ -35,27 +35,27 @@ export default function HomeScreen() {
 
       {/* Zona detectada */}
       <View style={[tw`bg-white rounded-lg p-4  mt-4 shadow border-l-4`, sharedStyles.borderColorGreen]}>
-        <View style={tw`flex-row justify-between items-center mb-3`}>
+        <View style={tw`flex-row justify-between items-center ml-1 mb-3`}>
         <View style={tw`flex-row items-center`}>
-        <Ionicons name="map-outline" size={22} style={sharedStyles.textColorGreen} />
-        <Text style={tw`text-gray-800 ml-1 text-lg font-bold `}>Zona detectada</Text>
+        <Text><Ionicons name="map-outline" size={22} style={sharedStyles.textColorGreen} /></Text>
+        <Text style={tw`text-gray-800 ml-2 text-lg font-bold `}>Zona detectada</Text>
         </View>
         <View style={tw`flex-row items-center bg-green-100 rounded-full px-2`}>
-            <FontAwesome name="circle" size={8} style={sharedStyles.textColorGreen} />
+            <Text><FontAwesome name="circle" size={8} style={sharedStyles.textColorGreen} /></Text>
             <Text style={[tw`p-1 font-medium ml-1`, sharedStyles.textColorGreen]}>Zona Verde</Text>
         </View>
         </View>
         <View style={tw`flex-row items-center mx-4 mt-1 justify-between`}>
             <View style={tw`flex-row items-center`}>
-                <Ionicons name="time-outline" size={20} style={tw`text-gray-800 mr-1`} />
-                <View style={tw`flex-col `}>
+                <Text><Ionicons name="time-outline" size={20} style={tw`text-gray-800 mr-1`} /></Text>
+                <View style={tw`flex-col ml-1`}>
                     <Text style={tw`text-gray-500`}>Lun-Vier:</Text>
                     <Text style={tw`text-gray-800`}>7:00 - 20:00 </Text>
                 </View>
             </View>
             <View style={tw`flex-row items-center`}>
-                <Ionicons name="time-outline" size={20} style={tw`text-gray-800 mr-1`} />
-                <View style={tw`flex-col `}>
+                <Text><Ionicons name="time-outline" size={20} style={tw`text-gray-800 mr-1`} /></Text>
+                <View style={tw`flex-col ml-1`}>
                     <Text style={tw`text-gray-500`}>Sábados:</Text>
                     <Text style={tw`text-gray-800`}>9:00 - 20:00 </Text>
                 </View>
@@ -70,8 +70,8 @@ export default function HomeScreen() {
       </View>
 
       <View style={tw`bg-gray-300 border border-gray-400 flex-row justify-center items-center rounded-lg p-2 mt-4 shadow `}>
-        <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800 `} />
-        <Text style={tw`text-gray-800 text-base font-semibold `}>Sin estacionamiento activo</Text>
+        <Text><Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800 `} /></Text>
+        <Text style={tw`ml-1 text-gray-800 text-base font-semibold `}>Sin estacionamiento activo</Text>
       </View>
 
 
