@@ -49,6 +49,9 @@ export default function LoginScreen({ navigation }) {
           <Text style={[tw` text-center`, sharedStyles.textColorBlue]}>Registrate</Text>
         </TouchableOpacity>
       </View>
+      <View style={tw`absolute bottom-5 left-0 right-0 items-center`}>
+            <Text style={tw`text-white text-xs`}>Municipalidad de La Plata • UTN</Text>
+        </View>
     </View>
   );
 }
