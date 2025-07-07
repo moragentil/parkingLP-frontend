@@ -7,6 +7,7 @@ import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
 import PayScreen from '../screens/PayScreen';
 import CarScreen from '../screens/CarScreen';
+import SettingsScreen from '../screens/SettingsScreen'; // Importa la nueva pantalla
 import SideMenu from './SideMenu';
 
 export default function MainLayout() {
@@ -28,6 +29,8 @@ export default function MainLayout() {
         return <PayScreen />;
       case 'Car':
         return <CarScreen />;
+      case 'Settings': // Añade el caso para Settings
+        return <SettingsScreen navigation={{ navigate: setCurrentScreen }} />;
       default:
         return <HomeScreen navigation={{ navigate: setCurrentScreen }} />;
     }
@@ -44,6 +47,8 @@ export default function MainLayout() {
         return 'Pagar';
       case 'Car':
         return 'Mi Auto';
+      case 'Settings': // Añade el caso para Settings
+        return 'Configuración';
       default:
         return 'Parking LP';
     }
