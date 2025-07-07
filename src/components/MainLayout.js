@@ -21,7 +21,7 @@ export default function MainLayout() {
   const renderContent = () => {
     switch (currentScreen) {
       case 'Home':
-        return <HomeScreen />;
+        return <HomeScreen navigation={{ navigate: setCurrentScreen }} />;
       case 'Map':
         return <MapScreen />;
       case 'Pay':
@@ -29,7 +29,7 @@ export default function MainLayout() {
       case 'Car':
         return <CarScreen />;
       default:
-        return <HomeScreen />;
+        return <HomeScreen navigation={{ navigate: setCurrentScreen }} />;
     }
   };
 

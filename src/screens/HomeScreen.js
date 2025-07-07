@@ -6,7 +6,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { MaterialIcons } from '@expo/vector-icons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   return (
     <View style={tw`flex-1 m-4 bg-gray-200`}>
 
@@ -77,10 +77,16 @@ export default function HomeScreen() {
 
       {/* Botones */}
       <View style={tw`flex-row justify-between mr-2 mt-4`}>
-        <TouchableOpacity style={[tw` mr-2 p-4 w-1/2 rounded-lg  `, sharedStyles.bgCustomBlue]}>
+        <TouchableOpacity 
+          style={[tw` mr-2 p-4 w-1/2 rounded-lg  `, sharedStyles.bgCustomBlue]}
+          onPress={() => navigation.navigate('Pay')}
+        >
           <Text style={tw`text-white text-center font-bold`}>Pagar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[tw` p-4 w-1/2 rounded-lg `, sharedStyles.bgCustomBlue]}>
+        <TouchableOpacity 
+          style={[tw` p-4 w-1/2 rounded-lg `, sharedStyles.bgCustomBlue]}
+          onPress={() => navigation.navigate('Map')}
+        >
           <Text style={tw`text-white text-center font-bold`}>Zona Límite</Text>
         </TouchableOpacity>
       </View>
