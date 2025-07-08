@@ -12,8 +12,8 @@ export default function RegisterScreen({ navigation }) {
 
   const handleRegister = () => {
     if (password === confirmPassword) {
-      alert('Cuenta creada exitosamente');
-      navigation.navigate('Login');
+      // Navega a MainLayout en lugar de Login
+      navigation.replace('MainLayout');
     } else {
       alert('Las contraseñas no coinciden');
     }
@@ -36,6 +36,7 @@ export default function RegisterScreen({ navigation }) {
         <Text style={tw`text-gray-800`} >Email</Text>
         <TextInput
           style={tw`border border-gray-300 rounded-lg p-3 mb-3`}
+          type="email-address"
           placeholder=" juanperez@gmail.com"
           value={email}
           onChangeText={setEmail}
