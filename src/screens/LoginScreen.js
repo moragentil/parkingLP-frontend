@@ -22,21 +22,23 @@ export default function LoginScreen({ navigation }) {
       <View style={tw`bg-white  rounded-lg p-6 w-80`}>
         <Text style={tw`text-2xl text-gray-800 text-center font-bold mb-2`}>Iniciar Sesión</Text>
         <Text style={tw`text-gray-600 text-center mb-4`}>Accede a tu cuenta</Text>
+        <Text style={tw`text-gray-800 `} >Teléfono o Email</Text>
         <TextInput
           style={tw`border border-gray-300 rounded-lg p-3 mb-4`}
-          placeholder="Teléfono o Email"
+          placeholder="11361236485 o juan@gmail.com"
           value={username}
           onChangeText={setUsername}
         />
+        <Text style={tw`text-gray-800`} >Contraseña</Text>
         <TextInput
           style={tw`border border-gray-300 rounded-lg p-3 mb-4`}
-          placeholder="Contraseña"
+          placeholder="Tu contraseña"
           secureTextEntry
           value={password}
           onChangeText={setPassword}
         />
         <TouchableOpacity
-          style={[tw` rounded py-3`, sharedStyles.bgCustomBlue]}
+          style={[tw` rounded-lg py-3`, sharedStyles.bgCustomBlue]}
           onPress={handleLogin}
         >
           <Text style={tw`text-white text-center font-bold`}>Entrar</Text>
