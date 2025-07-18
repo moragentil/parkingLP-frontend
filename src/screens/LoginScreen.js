@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from '../utils/tailwind';
 import sharedStyles from '../utils/sharedStyles';
-import api from '../services/api'; // Importa la instancia de axios
+import api from '../services/api';
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState(''); // Cambiado de username a email
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,9 +25,9 @@ export default function LoginScreen({ navigation }) {
       });
 
       if (response.data.status) {
-        // Guardar token y datos del usuario (opcional)
-        // await AsyncStorage.setItem('token', response.data.token);
-        // await AsyncStorage.setItem('usuario', JSON.stringify(response.data.usuario));
+        // Guardar token y datos del usuario
+        await AsyncStorage.setItem('token', response.data.token);
+        await AsyncStorage.setItem('usuario', JSON.stringify(response.data.usuario));
         
         console.log('Login exitoso:', response.data.message);
         navigation.replace('MainLayout');

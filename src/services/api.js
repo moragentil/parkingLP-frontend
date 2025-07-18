@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Función para obtener la URL base según el entorno
 const getBaseURL = () => {
@@ -38,12 +39,12 @@ const api = axios.create({
 
 // Interceptor para requests - agregar token de autenticación
 api.interceptors.request.use(
-  (config) => {
-    // Aquí puedes agregar el token de autenticación si lo tienes
-    // const token = AsyncStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+  async (config) => {
+    // Agregar el token de autenticación si existe
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     
     console.log('Request:', config.method?.toUpperCase(), config.url);
     return config;
@@ -60,14 +61,16 @@ api.interceptors.response.use(
     console.log('Response:', response.status, response.config.url);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('Response Error:', error.response?.status, error.response?.data);
     
     // Manejar errores específicos
     if (error.response?.status === 401) {
-      // Token expirado o no válido
-      console.log('Token inválido, redirigir a login');
-      // Aquí puedes limpiar el token y redirigir al login
+      // Token expirado o no válido - limpiar storage y redirigir
+      console.log('Token inválido, limpiando datos de usuario');
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('usuario');
+      // Aquí necesitarías redirigir al login
     }
     
     if (error.response?.status >= 500) {

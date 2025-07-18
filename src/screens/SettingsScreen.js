@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
 import tw from '../utils/tailwind';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import sharedStyles from '../utils/sharedStyles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen({ navigation }) {
   const [fullName, setFullName] = useState('John Doe');
@@ -14,10 +15,18 @@ export default function SettingsScreen({ navigation }) {
     alert('Cambios guardados');
   };
 
-  const handleLogout = () => {
-    // Aquí iría la lógica para cerrar sesión.
-    // Por ahora, navegamos a la pantalla de Login.
-    navigation.navigate('Login');
+  const handleLogout = async () => {
+    try {
+      // Limpiar datos del storage
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('usuario');
+      
+      // Navegar al login
+      navigation.navigate('Login');
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      Alert.alert('Error', 'No se pudo cerrar la sesión correctamente');
+    }
   };
 
   return (
