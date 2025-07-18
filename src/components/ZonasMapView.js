@@ -9,11 +9,13 @@ export default function ZonasMapView({
   initialRegion, 
   showUserLocation = true,
   onMapPress,
-  children 
+  children,
+  zonas = null, // Nueva prop para recibir zonas
+  loading = false // Nueva prop para estado de carga
 }) {
   const [location, setLocation] = useState(null);
-  const [zonas, setZonas] = useState([]);
-  const [loadingZonas, setLoadingZonas] = useState(true);
+  const [zonasInternas, setZonasInternas] = useState([]);
+  const [loadingZonasInternas, setLoadingZonasInternas] = useState(true);
   const [mapRegion, setMapRegion] = useState(
     initialRegion || {
       latitude: -34.9214, // La Plata por defecto
@@ -23,12 +25,22 @@ export default function ZonasMapView({
     }
   );
 
+  // Usar zonas externas si se proporcionan, sino cargar internamente
+  const zonasAUsar = zonas || zonasInternas;
+  const loadingZonas = loading || loadingZonasInternas;
+
   useEffect(() => {
     if (showUserLocation) {
       getCurrentLocation();
     }
-    cargarZonasParaMapa();
-  }, []);
+    
+    // Solo cargar zonas internamente si no se proporcionan externamente
+    if (!zonas) {
+      cargarZonasParaMapa();
+    } else {
+      setLoadingZonasInternas(false);
+    }
+  }, [zonas]);
 
   const getCurrentLocation = async () => {
     try {
@@ -58,12 +70,12 @@ export default function ZonasMapView({
 
   const cargarZonasParaMapa = async () => {
     try {
-      setLoadingZonas(true);
+      setLoadingZonasInternas(true);
       const response = await api.get('/zonas-mapa');
       
       if (response.data.status) {
-        setZonas(response.data.zonas);
-        console.log('Zonas para mapa cargadas:', response.data.zonas.length);
+        setZonasInternas(response.data.zonas);
+        console.log('Zonas para mapa cargadas internamente:', response.data.zonas.length);
       } else {
         console.error('Error cargando zonas:', response.data.message);
       }
@@ -73,7 +85,7 @@ export default function ZonasMapView({
         console.warn('Sesión expirada');
       }
     } finally {
-      setLoadingZonas(false);
+      setLoadingZonasInternas(false);
     }
   };
 
@@ -115,7 +127,11 @@ export default function ZonasMapView({
   };
 
   const renderZonaPolygons = () => {
-    return zonas.map((zona) => {
+    if (!zonasAUsar || zonasAUsar.length === 0) {
+      return null;
+    }
+
+    return zonasAUsar.map((zona) => {
       if (!zona.poligonos || zona.poligonos.length === 0) {
         return null;
       }
@@ -160,7 +176,11 @@ export default function ZonasMapView({
   };
 
   const renderZonaCentroides = () => {
-    return zonas
+    if (!zonasAUsar || zonasAUsar.length === 0) {
+      return null;
+    }
+
+    return zonasAUsar
       .filter(zona => zona.centroide && zona.centroide.lat && zona.centroide.lng)
       .map((zona) => (
         <Marker
