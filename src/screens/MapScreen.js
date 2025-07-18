@@ -181,6 +181,42 @@ export default function MapScreen({ navigation }) {
     return horariosFormateados;
   };
 
+  const ordenarZonas = (zonas) => {
+    const ordenPrioridad = {
+      'verde': 1,
+      'rosa': 2,
+      'azul': 3,
+      'amarilla': 4,
+      'prohibida': 5
+    };
+    
+    return [...zonas].sort((a, b) => {
+      // Si es prohibido estacionar, va al final
+      if (a.es_prohibido_estacionar && !b.es_prohibido_estacionar) return 1;
+      if (!a.es_prohibido_estacionar && b.es_prohibido_estacionar) return -1;
+      if (a.es_prohibido_estacionar && b.es_prohibido_estacionar) return 0;
+      
+      // Para zonas normales, ordenar por nombre
+      const nombreA = a.nombre.toLowerCase();
+      const nombreB = b.nombre.toLowerCase();
+      
+      let prioridadA = 999; // Por defecto al final
+      let prioridadB = 999;
+      
+      // Buscar la prioridad basada en el nombre
+      Object.keys(ordenPrioridad).forEach(color => {
+        if (nombreA.includes(color)) {
+          prioridadA = ordenPrioridad[color];
+        }
+        if (nombreB.includes(color)) {
+          prioridadB = ordenPrioridad[color];
+        }
+      });
+      
+      return prioridadA - prioridadB;
+    });
+  };
+
   const renderZonaItem = (zona) => {
     if (zona.es_prohibido_estacionar) {
       return (
@@ -269,7 +305,7 @@ export default function MapScreen({ navigation }) {
               </View>
             ) : zonasLeyenda.length > 0 ? (
               <>
-                {zonasLeyenda.map(zona => renderZonaItem(zona))}
+                {ordenarZonas(zonasLeyenda).map(zona => renderZonaItem(zona))}
               </>
             ) : (
               <View style={tw`p-4`}>
