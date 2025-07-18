@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import tw from '../utils/tailwind';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
 import sharedStyles from '../utils/sharedStyles';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import ZonasMapView from '../components/ZonasMapView';
 import api from '../services/api';
 
 export default function MapScreen({ navigation }) {
@@ -50,14 +48,12 @@ export default function MapScreen({ navigation }) {
 
   const getCurrentLocation = async () => {
     try {
-      // Pedir permisos de ubicación
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permisos requeridos', 'Se necesita acceso a la ubicación para mostrar el mapa');
         return;
       }
 
-      // Obtener ubicación actual
       let currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.High,
       });
@@ -231,10 +227,10 @@ export default function MapScreen({ navigation }) {
     const horariosFormateados = formatearHorariosParaMostrar(zona.horarios_formateados);
 
     return (
-      <View key={zona.id} style={[tw`flex-row p-2 mb-1 items-center rounded-lg w-full justify-between`, bgColorStyle]}>
+      <View key={zona.id} style={[tw`flex-row p-2 pr-2 mb-1 items-center rounded-lg w-full justify-between`, bgColorStyle]}>
         <Text style={[tw`font-semibold flex-1`, textColorStyle]}>{zona.nombre}</Text>
         
-        <View style={tw`flex-col justify-center items-center mx-2`}>
+        <View style={tw`flex-col justify-center items-center mx-1`}>
           <Text style={tw`text-gray-500 text-xs font-medium`}>{zona.tarifas_formateadas}</Text>
           <Text style={tw`text-gray-500 text-xs`}>por hora</Text>
         </View>
@@ -255,41 +251,42 @@ export default function MapScreen({ navigation }) {
       showsVerticalScrollIndicator={true}
     >
       <View style={tw`m-4`}>
-        {/* Mapa interactivo */}
+        {/* Mapa interactivo con zonas */}
         <View style={tw`flex items-center justify-center`}>
           <View style={[tw`h-72 w-full border rounded-xl overflow-hidden`, sharedStyles.borderColorBlue]}>
-            <MapView
+            <ZonasMapView
               style={tw`flex-1`}
-              region={mapRegion}
-              onPress={onMapPress}
-              showsUserLocation={true}
-              showsMyLocationButton={true}
-              mapType="standard"
+              initialRegion={mapRegion}
+              showUserLocation={true}
+              onMapPress={onMapPress}
             >
-              {location && (
-                <Marker
-                  coordinate={{
-                    latitude: location.latitude,
-                    longitude: location.longitude,
+              {/* Botón de refresh ubicación */}
+              <View style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+              }}>
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: 'white',
+                    borderRadius: 20,
+                    padding: 8,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
                   }}
-                  title="Tu ubicación"
-                  description="Ubicación actual"
-                  pinColor="red"
-                />
-              )}
-            </MapView>
-            
-            {/* Overlay con botón de recargar ubicación */}
-            <TouchableOpacity
-              style={tw`absolute top-2 right-2 bg-white rounded-full p-2 shadow`}
-              onPress={getCurrentLocation}
-            >
-              <Ionicons name="refresh" size={20} color="blue" />
-            </TouchableOpacity>
+                  onPress={getCurrentLocation}
+                >
+                  <Ionicons name="refresh" size={20} color="blue" />
+                </TouchableOpacity>
+              </View>
+            </ZonasMapView>
           </View>
         </View>
 
-        {/* Leyenda de Zonas */}
+        {/* Leyenda de Zonas - implementación existente */}
         <View style={[tw`bg-white rounded-lg p-3 mt-4 shadow`]}>
           <View style={tw`flex-row justify-between items-center mb-2`}>
             <Text style={tw`text-gray-800 text-lg font-bold`}>Leyenda de Zonas</Text>
