@@ -90,6 +90,8 @@ export default function HomeScreen({ navigation }) {
     
     if (zona) {
       console.log('Zona detectada:', zona.nombre, 'Color:', zona.color_mapa);
+      console.log('Horarios completos de la zona detectada:', zona.horarios_formateados);
+      console.log('Tipo de horarios_formateados:', typeof zona.horarios_formateados);
     } else {
       console.log('No se detectó ninguna zona');
     }
@@ -178,23 +180,56 @@ export default function HomeScreen({ navigation }) {
     };
   };
 
+  // ✅ Función corregida para procesar horarios del backend
   const formatearHorariosZona = (zona) => {
-    if (!zona || !zona.horarios_formateados) {
+    console.log('Procesando zona para horarios:', zona?.nombre);
+    console.log('Horarios raw:', zona?.horarios_formateados);
+    
+    if (!zona) {
+      console.log('No hay zona');
+      return { lunesViernes: 'Sin horarios', sabados: 'Sin horarios' };
+    }
+
+    // Verificar si horarios_formateados existe y es un array o un objeto
+    let horariosArray = zona.horarios_formateados;
+    
+    // Si es un objeto, convertir a array los valores
+    if (horariosArray && typeof horariosArray === 'object' && !Array.isArray(horariosArray)) {
+      horariosArray = Object.values(horariosArray);
+    }
+    
+    // Si no es array, intentar crear uno
+    if (!Array.isArray(horariosArray)) {
+      console.log('horarios_formateados no es un array:', typeof horariosArray);
       return { lunesViernes: 'Sin horarios', sabados: 'Sin horarios' };
     }
 
     let lunesViernes = 'Sin horarios';
     let sabados = 'Sin horarios';
 
-    if (zona.horarios_formateados.lun_vier) {
-      lunesViernes = zona.horarios_formateados.lun_vier.replace('Lun-Vier: ', '');
-    }
+    console.log('Procesando array de horarios:', horariosArray);
 
-    if (zona.horarios_formateados.sabado) {
-      sabados = zona.horarios_formateados.sabado.replace('Sáb: ', '');
-    }
+    // Procesar cada elemento del array de horarios
+    horariosArray.forEach((horario, index) => {
+      console.log(`Procesando horario ${index}:`, horario);
+      
+      if (typeof horario === 'string') {
+        if (horario.includes('Lun-Vie:') || horario.includes('Lun-Vier:')) {
+          // Extraer solo el horario después de "Lun-Vie: " o "Lun-Vier: "
+          lunesViernes = horario.replace(/Lun-Vie[r]?:\s*/, '');
+          console.log('Horario lun-vie encontrado:', lunesViernes);
+        } else if (horario.includes('Sáb:') || horario.includes('Sab:')) {
+          // Extraer solo el horario después de "Sáb: "
+          sabados = horario.replace(/Sáb?:\s*/, '');
+          console.log('Horario sábado encontrado:', sabados);
+        }
+      }
+    });
 
-    return { lunesViernes, sabados };
+    const resultado = { lunesViernes, sabados };
+    console.log('Resultado final de horarios:', resultado);
+    
+    return resultado;
   };
 
   const obtenerEstadoZona = (zona) => {
