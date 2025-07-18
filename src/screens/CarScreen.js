@@ -1,11 +1,91 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Linking, Alert } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import * as Location from 'expo-location';
 import tw from '../utils/tailwind';
 import sharedStyles from '../utils/sharedStyles';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 
 export default function CarScreen({ navigation }) {
+  const [userLocation, setUserLocation] = useState(null);
+  const [mapRegion, setMapRegion] = useState({
+    latitude: -34.9214, // La Plata por defecto
+    longitude: -57.9544,
+    latitudeDelta: 0.005,
+    longitudeDelta: 0.005,
+  });
+
+  // Ubicación simulada del auto estacionado
+  const carLocation = {
+    latitude: -34.9220, // Simulando que está cerca
+    longitude: -57.9540,
+    address: "Av. 13 entre 48 y 49"
+  };
+
+  useEffect(() => {
+    getCurrentLocation();
+    // Centrar el mapa para mostrar tanto el usuario como el auto
+    setMapRegion({
+      latitude: (carLocation.latitude + (-34.9214)) / 2, // Punto medio
+      longitude: (carLocation.longitude + (-57.9544)) / 2,
+      latitudeDelta: 0.008,
+      longitudeDelta: 0.008,
+    });
+  }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permisos requeridos', 'Se necesita acceso a la ubicación');
+        return;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      setUserLocation(currentLocation.coords);
+    } catch (error) {
+      console.error('Error obteniendo ubicación:', error);
+    }
+  };
+
+  const openInGoogleMaps = () => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${carLocation.latitude},${carLocation.longitude}&travelmode=walking`;
+    
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(url);
+        } else {
+          Alert.alert('Error', 'No se puede abrir Google Maps');
+        }
+      })
+      .catch((err) => {
+        console.error('Error opening Google Maps:', err);
+        Alert.alert('Error', 'No se pudo abrir Google Maps');
+      });
+  };
+
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radio de la Tierra en km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c * 1000; // Convertir a metros
+    return Math.round(distance);
+  };
+
+  const distance = userLocation 
+    ? calculateDistance(userLocation.latitude, userLocation.longitude, carLocation.latitude, carLocation.longitude)
+    : 250;
+
   return (
     <View style={tw`flex-1 m-4 bg-gray-200`}>
 
@@ -23,7 +103,7 @@ export default function CarScreen({ navigation }) {
             <View style={tw`flex-row items-center mb-2`}>
               <View>
                 <Text style={tw`text-gray-500`}>Dirección</Text>
-                <Text style={tw`text-gray-800 font-semibold`}>Av. 13 entre 48 y 49</Text>
+                <Text style={tw`text-gray-800 font-semibold`}>{carLocation.address}</Text>
               </View>
             </View>
 
@@ -31,7 +111,7 @@ export default function CarScreen({ navigation }) {
             <View style={tw`flex-row items-center`}>
               <View>
                 <Text style={tw`text-gray-500`}>Distancia</Text>
-                <Text style={[tw`text-gray-800 font-semibold`]}>250m</Text>
+                <Text style={[tw`text-gray-800 font-semibold`]}>{distance}m</Text>
               </View>
             </View>
           </View>
@@ -58,20 +138,75 @@ export default function CarScreen({ navigation }) {
       </View>
 
       {/* Navegacion hacia el auto */}
-
       <View style={[tw`bg-white rounded-t-lg p-4 mt-4 shadow `]}>
         <View style={tw`flex-row items-center `}>
-        <Text><Ionicons name="navigate-outline" size={24} style={[tw``, sharedStyles.textColorBlue]}/></Text>
-        <Text style={tw`text-xl ml-2 font-semibold text-gray-800`} >Encontrá tu auto estacionado</Text>
+          <Text><Ionicons name="navigate-outline" size={24} style={[tw``, sharedStyles.textColorBlue]}/></Text>
+          <Text style={tw`text-xl ml-2 font-semibold text-gray-800`}>Encontrá tu auto estacionado</Text>
         </View>
       </View>
-      <View style={[tw`h-44 bg-blue-100 w-full  items-center `]} >
-        <Text style={[tw` text-center mt-20`, sharedStyles.textColorBlue]}>Mapa Interactivo</Text>
+
+      {/* Mapa Interactivo */}
+      <View style={[tw`h-44 w-full border overflow-hidden`, sharedStyles.borderColorBlue]}>
+        <MapView
+          style={tw`flex-1`}
+          region={mapRegion}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
+          mapType="standard"
+        >
+          {/* Marker del auto estacionado */}
+          <Marker
+            coordinate={{
+              latitude: carLocation.latitude,
+              longitude: carLocation.longitude,
+            }}
+            title="Tu Auto"
+            description={carLocation.address}
+            pinColor="red"
+          >
+            <View style={tw`bg-red-500 rounded-full p-2`}>
+              <Ionicons name="car" size={20} color="white" />
+            </View>
+          </Marker>
+
+          {/* Marker de la ubicación del usuario */}
+          {userLocation && (
+            <Marker
+              coordinate={{
+                latitude: userLocation.latitude,
+                longitude: userLocation.longitude,
+              }}
+              title="Tu ubicación"
+              description="Estás aquí"
+              pinColor="blue"
+            >
+              <View style={tw`bg-blue-500 rounded-full p-2`}>
+                <Ionicons name="person" size={16} color="white" />
+              </View>
+            </Marker>
+          )}
+        </MapView>
+
+        {/* Botón de centrar mapa */}
+        <TouchableOpacity
+          style={tw`absolute top-2 right-2 bg-white rounded-full p-2 shadow`}
+          onPress={() => {
+            setMapRegion({
+              latitude: (carLocation.latitude + (userLocation?.latitude || -34.9214)) / 2,
+              longitude: (carLocation.longitude + (userLocation?.longitude || -57.9544)) / 2,
+              latitudeDelta: 0.008,
+              longitudeDelta: 0.008,
+            });
+          }}
+        >
+          <Ionicons name="locate" size={20} color="blue" />
+        </TouchableOpacity>
       </View>
 
       <View>
         <TouchableOpacity
-          style={[tw`rounded-b-lg p-4  flex-row items-center justify-center`, sharedStyles.bgCustomBlue]}
+          style={[tw`rounded-b-lg p-4 flex-row items-center justify-center`, sharedStyles.bgCustomBlue]}
+          onPress={openInGoogleMaps}
         >
           <Ionicons name="navigate-outline" size={20} color="white" />
           <Text style={tw`text-white text-center ml-2 font-bold`}>
@@ -82,7 +217,7 @@ export default function CarScreen({ navigation }) {
       
       <View style={[tw`bg-green-100 rounded-lg p-4 mt-4 shadow`, sharedStyles.borderColorBlue]}>
         <View style={tw`flex-col `}>
-          <Text style={[tw`font-semibold text-green-700 text-lg`]} >Estado del estacionamiento</Text>
+          <Text style={[tw`font-semibold text-green-700 text-lg`]}>Estado del estacionamiento</Text>
           <View style={tw`flex-row mt-2 justify-between items-center`}>
             <Text style={[tw`text-green-700 text-base`]}>Tiempo restante:</Text>
             <Text style={[tw`text-green-700 text-base`]}>2h 15min</Text>
