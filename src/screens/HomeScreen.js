@@ -349,7 +349,7 @@ export default function HomeScreen({ navigation }) {
             <View style={tw`flex-row items-center w-full mt-2 justify-center`}>
               <Text style={[
                 tw`text-sm mx-4 mt-2 font-medium p-1 px-4 rounded-full`,
-                estadoZona.esActiva ? [tw`bg-green-100`, sharedStyles.textColorGreen] : tw`bg-gray-100 text-gray-600`
+                estadoZona.esActiva ? [tw``, zoneStyles.bgStyle, zoneStyles.textStyle] : tw`bg-gray-100 text-gray-600`
               ]}>
                 {estadoZona.mensaje}
               </Text>
