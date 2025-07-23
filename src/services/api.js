@@ -5,20 +5,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Función para obtener la URL base según el entorno
 const getBaseURL = () => {
   if (__DEV__) {
-    // Para desarrollo
+    // Usar tu IP real de Wi-Fi
+    const BACKEND_IP = '192.168.0.60'; // ← Esta es tu IP de Wi-Fi
+    
     if (Platform.OS === 'android') {
-      // Emulador Android usa esta IP especial para localhost
-      return 'http://10.0.2.2:8000/api';
+      // Para emulador Android
+      return `http://10.0.2.2:8000/api`;
     } else if (Platform.OS === 'ios') {
-      // iOS Simulator puede usar localhost SOLO si usas el simulador de iOS
-      // Si usas Expo Go en dispositivo físico, usa tu IP local
-      return 'http://192.168.1.35:8000/api'; // Tu IP de Wi-Fi
+      // Para iOS Simulator y Expo Go
+      return `http://${BACKEND_IP}:8000/api`;
     } else {
-      // Web o Expo Go en dispositivo físico
-      return 'http://127.0.0.1:8000/api'; // Tu IP de Wi-Fi
+      // Para Expo Go en dispositivo físico o web
+      return `http://${BACKEND_IP}:8000/api`;
     }
   } else {
-    // Producción
     return 'https://tu-backend-produccion.com/api';
   }
 };

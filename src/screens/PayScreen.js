@@ -1,13 +1,254 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import * as Location from 'expo-location';
 import tw from '../utils/tailwind';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import sharedStyles from '../utils/sharedStyles';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { useZonas } from '../hooks/useZonas';
 
 export default function PayScreen({ navigation }) {
-  const [showDetails, setShowDetails] = useState(false); // Estado para controlar la visibilidad
+  const [showDetails, setShowDetails] = useState(false);
+  const [location, setLocation] = useState(null);
+  const [address, setAddress] = useState('Detectando ubicación...');
+  const [zonaDetectada, setZonaDetectada] = useState(null);
+  const [loadingUbicacion, setLoadingUbicacion] = useState(true);
+
+  const { zonas, loading: loadingZonas, cargarZonasParaMapa, buscarZonaPorUbicacion } = useZonas();
+
+  useEffect(() => {
+    getCurrentLocation();
+    cargarZonasParaMapa();
+  }, []);
+
+  useEffect(() => {
+    // Detectar zona cuando cambien la ubicación o las zonas
+    if (location && zonas.length > 0) {
+      detectarZona();
+    }
+  }, [location, zonas]);
+
+  const getCurrentLocation = async () => {
+    try {
+      setLoadingUbicacion(true);
+      
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permisos requeridos', 'Se necesita acceso a la ubicación');
+        return;
+      }
+
+      let currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = currentLocation.coords;
+      setLocation(currentLocation.coords);
+
+      // Obtener dirección
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+
+      if (reverseGeocode.length > 0) {
+        const addr = reverseGeocode[0];
+        const addressString = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.city || ''}`;
+        setAddress(addressString);
+      }
+
+    } catch (error) {
+      console.error('Error obteniendo ubicación:', error);
+      setAddress('No se pudo obtener la ubicación');
+    } finally {
+      setLoadingUbicacion(false);
+    }
+  };
+
+  const detectarZona = () => {
+    if (!location) return;
+    
+    const zona = buscarZonaPorUbicacion(location.latitude, location.longitude);
+    setZonaDetectada(zona);
+    
+    if (zona) {
+      console.log('🎯 PayScreen - Zona detectada:', zona.nombre);
+    } else {
+      console.log('❌ PayScreen - No se detectó ninguna zona');
+    }
+  };
+
+  // Función para convertir hex a rgba con transparencia
+  const hexToRgba = (hex, alpha = 0.1) => {
+    if (!hex) return 'rgba(156, 163, 175, 0.1)';
+    
+    const cleanHex = hex.replace('#', '');
+    const r = parseInt(cleanHex.substr(0, 2), 16);
+    const g = parseInt(cleanHex.substr(2, 2), 16);
+    const b = parseInt(cleanHex.substr(4, 2), 16);
+    
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  const darkenHexColor = (hex, amount = 60) => {
+    if (!hex) return 'rgb(75, 85, 99)';
+    
+    const cleanHex = hex.replace('#', '');
+    const r = Math.max(0, parseInt(cleanHex.substr(0, 2), 16) - amount);
+    const g = Math.max(0, parseInt(cleanHex.substr(2, 2), 16) - amount);
+    const b = Math.max(0, parseInt(cleanHex.substr(4, 2), 16) - amount);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  // Función para obtener estilos dinámicos de zona
+  const getZoneStyles = (zona) => {
+    if (!zona) {
+      return {
+        bgStyle: { backgroundColor: 'rgba(156, 163, 175, 0.1)' },
+        textStyle: { color: 'rgb(75, 85, 99)' },
+        colorName: 'Sin zona'
+      };
+    }
+
+    if (zona.es_prohibido_estacionar) {
+      return {
+        bgStyle: { backgroundColor: hexToRgba('#EF4444', 0.1) },
+        textStyle: { color: 'rgb(153, 27, 27)' },
+        colorName: 'Prohibido'
+      };
+    }
+
+    return {
+      bgStyle: { backgroundColor: hexToRgba(zona.color_mapa, 0.1) },
+      textStyle: { color: darkenHexColor(zona.color_mapa, 60) },
+      colorName: zona.nombre.split(' ')[1] || zona.nombre
+    };
+  };
+
+  // Función para formatear horarios
+  const formatearHorarios = (zona) => {
+    if (!zona || !Array.isArray(zona.horarios_formateados)) {
+      return [];
+    }
+
+    const horariosFormateados = [];
+    
+    zona.horarios_formateados.forEach(horario => {
+      if (typeof horario === 'string') {
+        if (horario.includes('Lun-Vie') || horario.includes('Lun-Vier')) {
+          const soloHorario = horario.replace(/Lun-Vie[r]?:\s*/, '');
+          horariosFormateados.push(`Lun-Vier: ${soloHorario}`);
+        } else if (horario.includes('Sáb') || horario.includes('Sab')) {
+          const soloHorario = horario.replace(/Sáb?:\s*/, '');
+          horariosFormateados.push(`Sab: ${soloHorario}`);
+        } else if (horario.includes('Dom')) {
+          const soloHorario = horario.replace(/Dom:\s*/, '');
+          horariosFormateados.push(`Dom: ${soloHorario}`);
+        }
+      }
+    });
+
+    return horariosFormateados;
+  };
+
+  // Función para obtener tarifas (simuladas - deberían venir del backend)
+  const obtenerTarifas = (zona) => {
+    if (!zona) return [];
+    
+    // Por ahora usar tarifas simuladas basadas en horarios
+    const horarios = formatearHorarios(zona);
+    const tarifas = [];
+    
+    horarios.forEach((horario, index) => {
+      if (horario.includes('Lun-Vier')) {
+        // Simular diferentes tarifas según el horario
+        if (horario.includes('07:00') && horario.includes('14:00')) {
+          tarifas.push('$500');
+        } else if (horario.includes('14:00') && horario.includes('20:00')) {
+          tarifas.push('$300');
+        } else {
+          tarifas.push('$300');
+        }
+      } else {
+        tarifas.push('$300');
+      }
+    });
+
+    return tarifas;
+  };
+
+  // Función para obtener costo actual
+  const obtenerCostoActual = (zona) => {
+    if (!zona || zona.es_prohibido_estacionar) return '$0';
+    
+    const ahora = new Date();
+    const horaActual = ahora.getHours();
+    const diaSemana = ahora.getDay();
+
+    // Lógica simple para determinar tarifa actual
+    if (diaSemana >= 1 && diaSemana <= 5) { // Lunes a viernes
+      if (horaActual >= 7 && horaActual < 14) {
+        return '$500';
+      } else if (horaActual >= 14 && horaActual < 20) {
+        return '$300';
+      }
+    } else if (diaSemana === 6) { // Sábado
+      if (horaActual >= 9 && horaActual < 20) {
+        return '$300';
+      }
+    }
+
+    return '$0';
+  };
+
+  // Función para obtener estado de zona
+  const obtenerEstadoZona = (zona) => {
+    if (!zona) return { mensaje: 'Sin zona detectada', color: 'gray', bgColor: 'bg-gray-100' };
+    
+    if (zona.es_prohibido_estacionar) {
+      return { 
+        mensaje: 'Prohibido Estacionar', 
+        color: 'red',
+        bgColor: 'bg-red-100'
+      };
+    }
+
+    const ahora = new Date();
+    const horaActual = ahora.getHours();
+    const diaSemana = ahora.getDay();
+
+    if (diaSemana >= 1 && diaSemana <= 5) { // Lunes a viernes
+      if (horaActual >= 7 && horaActual < 20) {
+        return { 
+          mensaje: 'Pago Requerido', 
+          color: 'red',
+          bgColor: 'bg-red-100'
+        };
+      }
+    } else if (diaSemana === 6) { // Sábado
+      if (horaActual >= 9 && horaActual < 20) {
+        return { 
+          mensaje: 'Pago Requerido', 
+          color: 'red',
+          bgColor: 'bg-red-100'
+        };
+      }
+    }
+
+    return { 
+      mensaje: 'Estacionamiento Gratuito', 
+      color: 'green',
+      bgColor: 'bg-green-100'
+    };
+  };
+
+  const zoneStyles = getZoneStyles(zonaDetectada);
+  const horariosFormateados = formatearHorarios(zonaDetectada);
+  const tarifas = obtenerTarifas(zonaDetectada);
+  const costoActual = obtenerCostoActual(zonaDetectada);
+  const estadoZona = obtenerEstadoZona(zonaDetectada);
 
   return (
     <ScrollView style={tw`flex-1 bg-gray-200`} contentContainerStyle={tw`px-4 pb-28 pt-4`}>
@@ -17,27 +258,45 @@ export default function PayScreen({ navigation }) {
           <Ionicons name="information-circle-outline" size={24} color="green" />
           <Text style={tw`text-lg font-bold text-gray-800 ml-2`}>Información de la zona</Text>
         </View>
+        
         <View style={tw`flex-row justify-between items-center ml-1 mb-2`}>
           <View style={tw`flex-row items-center`}>
             <MaterialIcons name="my-location" size={16} color="green" style={tw`mr-2 ml-1`} />
-            <Text style={tw`text-gray-800`}>Av. 13 entre 48 y 49</Text>
+            <Text style={tw`text-gray-800`} numberOfLines={1}>
+              {loadingUbicacion ? 'Detectando ubicación...' : address}
+            </Text>
           </View>
-          <View style={tw`flex-row items-center bg-green-100 rounded-full px-2`}>
-            <FontAwesome name="circle" size={8} style={sharedStyles.textColorGreen} />
-            <Text style={[tw`p-1 font-medium ml-1`, sharedStyles.textColorGreen]}>Zona Verde</Text>
-          </View>
+          
+          {zonaDetectada && (
+            <View style={[tw`flex-row items-center rounded-full px-2`, zoneStyles.bgStyle]}>
+              <FontAwesome name="circle" size={8} style={zoneStyles.textStyle} />
+              <Text style={[tw`p-1 font-medium ml-1`, zoneStyles.textStyle]}>
+                {zonaDetectada.es_prohibido_estacionar ? 'Prohibido' : zonaDetectada.nombre}
+              </Text>
+            </View>
+          )}
+          
+          {!zonaDetectada && !loadingZonas && (
+            <View style={tw`flex-row items-center bg-gray-100 rounded-full px-2`}>
+              <FontAwesome name="circle" size={8} style={tw`text-gray-600`} />
+              <Text style={tw`p-1 font-medium ml-1 text-gray-600`}>Sin zona</Text>
+            </View>
+          )}
         </View>
+        
         <View style={tw`flex-row justify-between w-full items-center mb-1`}>
           <Text>Estado actual:</Text>
-          <View style={tw`flex-row items-center bg-red-100 rounded-full px-2 py-1`}>
-            <FontAwesome name="circle" size={8} color="red" />
-            <Text style={tw`text-red-600 font-medium ml-2`}>Pago Requerido</Text>
+          <View style={[tw`flex-row items-center rounded-full px-2 py-1`, tw`${estadoZona.bgColor}`]}>
+            <FontAwesome name="circle" size={8} color={estadoZona.color} />
+            <Text style={[tw`font-medium ml-2`, estadoZona.color === 'red' ? tw`text-red-600` : tw`text-green-600`]}>
+              {estadoZona.mensaje}
+            </Text>
           </View>
         </View>
 
         {/* Botón para mostrar/ocultar detalles */}
         <TouchableOpacity
-          onPress={() => setShowDetails(!showDetails)} // Alternar visibilidad
+          onPress={() => setShowDetails(!showDetails)}
           style={[tw`bg-blue-500 rounded-lg py-2 px-4 mt-4`, sharedStyles.bgCustomBlue]}
         >
           <Text style={tw`text-white text-center font-bold`}>
@@ -51,17 +310,33 @@ export default function PayScreen({ navigation }) {
             {/* Columna de horarios */}
             <View style={tw`items-start`}>
               <Text style={tw`text-gray-500 mb-2`}>Horarios de pago</Text>
-              <Text style={tw`text-gray-500 font-semibold text-center`}>Lun-Vier: 7:00 - 14:00</Text>
-              <Text style={tw`text-gray-500 font-semibold text-center`}>Lun-Vier: 14:00 - 20:00</Text>
-              <Text style={tw`text-gray-500 font-semibold text-center`}>Sab: 9:00 - 20:00</Text>
+              {horariosFormateados.length > 0 ? (
+                horariosFormateados.map((horario, index) => (
+                  <Text key={index} style={tw`text-gray-500 font-semibold text-center`}>
+                    {horario}
+                  </Text>
+                ))
+              ) : (
+                <Text style={tw`text-gray-500 font-semibold text-center`}>
+                  {zonaDetectada ? 'Sin horarios de pago' : 'Zona no detectada'}
+                </Text>
+              )}
             </View>
 
             {/* Columna de tarifas */}
             <View style={tw`items-start`}>
               <Text style={tw`text-gray-500 mb-2`}>Tarifa por hora</Text>
-              <Text style={tw`text-green-600 font-semibold text-center`}>$500</Text>
-              <Text style={tw`text-green-600 font-semibold text-center`}>$300</Text>
-              <Text style={tw`text-green-600 font-semibold text-center`}>$300</Text>
+              {tarifas.length > 0 ? (
+                tarifas.map((tarifa, index) => (
+                  <Text key={index} style={tw`text-green-600 font-semibold text-center`}>
+                    {tarifa}
+                  </Text>
+                ))
+              ) : (
+                <Text style={tw`text-green-600 font-semibold text-center`}>
+                  {zonaDetectada ? zonaDetectada.tarifas_formateadas || '$0' : '$0'}
+                </Text>
+              )}
             </View>
           </View>
         )}
@@ -70,29 +345,54 @@ export default function PayScreen({ navigation }) {
       <View style={[tw`bg-white rounded-lg p-4 mt-4 shadow`]}>
         <View style={tw`flex-row items-center mb-1`}>
           <Text style={tw`mr-2`}><Ionicons name="play-outline" size={24} color="blue" /></Text>
-          <Text style={tw`text-xl font-semibold`} >Iniciar Estacionamiento</Text>
-          </View> 
-          <View style={[tw`p-3 bg-blue-100 mt-2 rounded-lg`, ]} >
-            <View style={tw`flex-row items-center justify-between`} >
+          <Text style={tw`text-xl font-semibold`}>Iniciar Estacionamiento</Text>
+        </View> 
+        
+        <View style={[tw`p-3 bg-blue-100 mt-2 rounded-lg`]}>
+          <View style={tw`flex-row items-center justify-between`}>
             <Text style={tw`text-lg font-semibold`}>Costo hora actual:</Text>
-            <Text style={[tw`text-2xl font-semibold`, sharedStyles.textColorBlue]}>$300</Text>
-            </View>
-            <Text style={tw`text-gray-500 mt-2`}>El costo final dependerá del tiempo real de estacionamiento</Text>
+            <Text style={[tw`text-2xl font-semibold`, sharedStyles.textColorBlue]}>
+              {costoActual}
+            </Text>
           </View>
-          <View style={tw`flex-row items-center justify-center mt-4`}>
-            <TouchableOpacity style={[tw`flex-row justify-center items-center mr-2 p-4 w-full rounded-lg  `, sharedStyles.bgCustomGreen]}>
-             <Text style={tw`text-white text-center mr-2`}><Ionicons name="open-outline" size={20} color="white" /></Text>
-            <Text style={tw`text-white text-lg text-center font-bold`}>Abrir App SEM y Comenzar</Text>
+          <Text style={tw`text-gray-500 mt-2`}>
+            El costo final dependerá del tiempo real de estacionamiento
+          </Text>
+        </View>
+        
+        <View style={tw`flex-row items-center justify-center mt-4`}>
+          <TouchableOpacity 
+            style={[
+              tw`flex-row justify-center items-center mr-2 p-4 w-full rounded-lg`,
+              zonaDetectada && !zonaDetectada.es_prohibido_estacionar && estadoZona.color === 'red' 
+                ? sharedStyles.bgCustomGreen 
+                : tw`bg-gray-400`
+            ]}
+            disabled={!zonaDetectada || zonaDetectada.es_prohibido_estacionar || estadoZona.color !== 'red'}
+          >
+            <Text style={tw`text-white text-center mr-2`}>
+              <Ionicons name="open-outline" size={20} color="white" />
+            </Text>
+            <Text style={tw`text-white text-lg text-center font-bold`}>
+              {!zonaDetectada 
+                ? 'Detectando zona...'
+                : zonaDetectada.es_prohibido_estacionar 
+                  ? 'Prohibido estacionar'
+                  : estadoZona.color === 'red'
+                    ? 'Abrir App SEM y Comenzar'
+                    : 'Estacionamiento gratuito'
+              }
+            </Text>
           </TouchableOpacity>
-          </View>
+        </View>
       </View>
 
-      <View style={[tw`bg-blue-100 rounded-lg p-3  mt-3 shadow`]}>
+      <View style={[tw`bg-blue-100 rounded-lg p-3 mt-3 shadow`]}>
         <View style={tw`flex-row items-center`}>
           <Text style={tw`mr-1`}><Ionicons name="information-circle-outline" size={18} color="blue" /></Text>
-        <View style={tw``}>
-          <Text style={[tw``, sharedStyles.textColorBlue]} >Información importante</Text>
-        </View>
+          <View style={tw``}>
+            <Text style={[tw``, sharedStyles.textColorBlue]}>Información importante</Text>
+          </View>
         </View>
         <View style={tw`ml-1 mt-1`}>
           <Text style={[tw`text-xs text-blue-500`]}>- El pago se procesa a través de la App SEM oficial</Text>
@@ -101,7 +401,6 @@ export default function PayScreen({ navigation }) {
           <Text style={[tw`text-xs text-blue-500`]}>- Se te cobrará desde el momento que inicies hasta que finalices o termine el horario</Text>
         </View>
       </View>
-
     </ScrollView>
   );
 }
