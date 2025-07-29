@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Linking, Alert, Modal, TextInput, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Linking, Alert, Modal, TextInput, ActivityIndicator, ScrollView, FlatList } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import tw from '../utils/tailwind';
@@ -16,7 +16,9 @@ export default function CarScreen({ navigation }) {
     longitudeDelta: 0.005,
   });
 
-  // Estados para el modal de agregar vehículo
+  const [vehiculos, setVehiculos] = useState([]);
+  const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
+  const [selectorVisible, setSelectorVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [nuevaPatente, setNuevaPatente] = useState('');
   const [agregandoVehiculo, setAgregandoVehiculo] = useState(false);
@@ -28,9 +30,32 @@ export default function CarScreen({ navigation }) {
     address: "Av. 13 entre 48 y 49"
   };
 
+  // ✅ useEffect unificado para que se ejecute UNA SOLA VEZ al montar la pantalla
   useEffect(() => {
+    cargarVehiculos();
     getCurrentLocation();
-  }, []);
+  }, []); // El array de dependencias vacío [] asegura que esto se ejecute solo una vez.
+
+  const cargarVehiculos = async () => {
+    try {
+      const response = await api.get('/vehiculos');
+      if (response.data.status && response.data.vehiculos) {
+        const vehiculosData = response.data.vehiculos;
+        setVehiculos(vehiculosData);
+        console.log("Vehiculos cargados:", vehiculosData);
+        // Seleccionar el que tiene estacionamiento activo o el primero
+        const activo = vehiculosData.find(v => v.estacionamientos.some(e => e.estado === 'activo'));
+        setVehiculoSeleccionado(activo || vehiculosData[0] || null);
+      } else {
+        setVehiculos([]);
+        setVehiculoSeleccionado(null);
+      }
+    } catch (error) {
+      console.error("Error cargando vehículos:", error);
+      setVehiculos([]);
+    } finally {
+    }
+  };
 
   const getCurrentLocation = async () => {
     try {
@@ -118,17 +143,31 @@ export default function CarScreen({ navigation }) {
 
   return (
     <ScrollView style={tw`flex-1 bg-gray-200`} contentContainerStyle={tw`p-4`}>
-      <View>
+      <View style={tw`flex-row justify-between items-center`}>
+                 {/* Selector de vehículos */}
+        {vehiculos.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setSelectorVisible(true)}
+            style={[tw`rounded-lg p-3 flex-row items-center justify-center flex-1 mr-1 bg-white w-1/2`]}
+          >
+            <Ionicons name="car-sport-outline" size={18} color="#3730a3" />
+            <Text style={tw`text-indigo-800 text-center ml-2 font-semibold text-sm`} numberOfLines={1}>
+              {vehiculoSeleccionado ? vehiculoSeleccionado.patente : 'Seleccionar'}
+            </Text>
+            <Ionicons name="chevron-down-outline" size={18} color="#3730a3" style={tw`ml-auto`} />
+          </TouchableOpacity>
+        )}
         {/* ✅ Botón modificado para abrir el modal */}
         <TouchableOpacity 
           onPress={() => setModalVisible(true)}
-          style={[tw`rounded-lg p-3 flex-row items-center justify-center`, sharedStyles.bgCustomBlue]}
+          style={[tw`rounded-lg p-3 flex-row items-center ml-1 justify-center w-1/2`, sharedStyles.bgCustomBlue]}
         >
           <Ionicons name="add-circle-outline" size={18} color="white" />
           <Text style={tw`text-white text-center ml-2 font-semibold text-sm`}>
             Agregar Vehículo
           </Text>
         </TouchableOpacity>
+
       </View>
 
       <View style={[tw`bg-white rounded-lg p-4 mt-4 shadow border-l-4`, sharedStyles.borderColorBlue]}>
@@ -244,6 +283,45 @@ export default function CarScreen({ navigation }) {
           </View>
         </View>
       </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={selectorVisible}
+        onRequestClose={() => setSelectorVisible(false)}
+      >
+        <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
+          <View style={tw`bg-white rounded-lg p-6 w-11/12 max-h-[60%]`}>
+            <Text style={tw`text-xl font-bold mb-4`}>Seleccionar Vehículo</Text>
+            <FlatList
+              data={vehiculos}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  onPress={() => {
+                    setVehiculoSeleccionado(item);
+                    setSelectorVisible(false);
+                  }}
+                  style={tw`p-4 border-b border-gray-200 flex-row items-center`}
+                >
+                  <Ionicons 
+                    name={item.id === vehiculoSeleccionado?.id ? 'radio-button-on' : 'radio-button-off'} 
+                    size={22} 
+                    style={tw`mr-4 ${item.id === vehiculoSeleccionado?.id ? 'text-blue-500' : 'text-gray-400'}`}
+                  />
+                  <Text style={tw`text-lg`}>{item.patente}</Text>
+                </TouchableOpacity>
+              )}
+            />
+            <TouchableOpacity
+              onPress={() => setSelectorVisible(false)}
+              style={tw`py-3 mt-4`}
+            >
+              <Text style={tw`text-gray-600 text-center font-bold`}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* ✅ Modal para agregar vehículo */}
       <Modal
