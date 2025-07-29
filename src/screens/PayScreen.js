@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert, Linking, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Linking, Platform, Modal, FlatList, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import tw from '../utils/tailwind';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -8,6 +8,7 @@ import sharedStyles from '../utils/sharedStyles';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { useZonas } from '../hooks/useZonas';
 import api from '../services/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function PayScreen({ navigation }) {
   const [showDetails, setShowDetails] = useState(false);
@@ -15,10 +16,85 @@ export default function PayScreen({ navigation }) {
   const [address, setAddress] = useState('Detectando ubicación...');
   const [zonaDetectada, setZonaDetectada] = useState(null);
   const [loadingUbicacion, setLoadingUbicacion] = useState(true);
-  const [tarifasHorarias, setTarifasHorarias] = useState([]); // ✅ Estado para tarifas del backend
-  const [loadingTarifas, setLoadingTarifas] = useState(true); // ✅ Estado de carga de tarifas
+  const [tarifasHorarias, setTarifasHorarias] = useState([]);
+  const [loadingTarifas, setLoadingTarifas] = useState(true);
+
+  // ✅ Estados para el selector de vehículos
+  const [vehiculos, setVehiculos] = useState([]);
+  const [cargandoVehiculos, setCargandoVehiculos] = useState(false);
+  const [selectorVehiculoVisible, setSelectorVehiculoVisible] = useState(false);
 
   const { zonas, loading: loadingZonas, cargarZonasParaMapa, buscarZonaPorUbicacion } = useZonas();
+
+  // ✅ Función para verificar si ya hay un estacionamiento activo
+  const verificarEstacionamientoActivo = async () => {
+    try {
+      const response = await api.get('/estacionamiento-activo');
+      
+      // El backend devuelve status:true si hay uno activo
+      if (response.data.status && response.data.estacionamiento) {
+        return response.data.estacionamiento;
+      }
+      
+      // Si no, devuelve null
+      return null;
+    } catch (error) {
+      // No es un error crítico si la respuesta es 404 (no encontrado)
+      if (error.response?.status !== 404) {
+        console.error('Error verificando estacionamiento activo:', error);
+      }
+      return null;
+    }
+  };
+
+  // ✅ Función para abrir la app SEM con mejor UX
+  const abrirAppSEMRealMejorada = async () => {
+    try {
+      let appUrl, storeUrl;
+
+      if (Platform.OS === 'android') {
+        const androidPackage = 'ar.edu.unlp.semmobile.laplata';
+        appUrl = `intent://launch#Intent;package=${androidPackage};end`;
+        storeUrl = `https://play.google.com/store/apps/details?id=${androidPackage}`;
+      } else {
+        appUrl = 'semmobile://';
+        storeUrl = 'https://apps.apple.com/app/sem-mobile/id1387705895';
+      }
+
+      const canOpen = await Linking.canOpenURL(appUrl);
+      
+      if (canOpen) {
+        await Linking.openURL(appUrl);
+        return true;
+      } else {
+        return new Promise((resolve) => {
+          Alert.alert(
+            'App SEM requerida',
+            'Para completar el pago necesitas la app oficial SEM La Plata.',
+            [
+              { text: 'Continuar sin app', style: 'cancel', onPress: () => resolve(false) },
+              {
+                text: 'Descargar SEM',
+                onPress: async () => {
+                  try {
+                    await Linking.openURL(storeUrl);
+                    resolve(true);
+                  } catch (error) {
+                    Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones.');
+                    resolve(false);
+                  }
+                },
+              },
+            ]
+          );
+        });
+      }
+    } catch (error) {
+      console.error('Error abriendo app SEM:', error);
+      Alert.alert('Error', 'No se pudo verificar la aplicación SEM.');
+      return false;
+    }
+  };
 
   useEffect(() => {
     getCurrentLocation();
@@ -588,29 +664,172 @@ export default function PayScreen({ navigation }) {
     }
   };
 
-  // ✅ Función para verificar si SEM está instalada (útil para mostrar íconos o estados)
-  const verificarSEMInstalada = async () => {
+  // ✅ Función mejorada para iniciar estacionamiento en el backend (ahora recibe vehiculoId)
+  const iniciarEstacionamientoBackend = async (vehiculoId) => {
     try {
-      const appUrl = Platform.OS === 'android'
-        ? 'intent://launch#Intent;package=ar.edu.unlp.semmobile.laplata;end'
-        : 'semmobile://';
-    
-      const estaInstalada = await Linking.canOpenURL(appUrl);
-      console.log('📱 SEM La Plata instalada:', estaInstalada);
-      return estaInstalada;
+      // Validaciones previas
+      if (!location || !zonaDetectada || !vehiculoId) {
+        Alert.alert('Error', 'Faltan datos para iniciar el estacionamiento (ubicación, zona o vehículo).');
+        return null;
+      }
+
+      console.log('🚗 Iniciando proceso de estacionamiento...');
+      
+      // Preparar datos para el backend
+      const datosEstacionamiento = {
+        vehiculo_id: vehiculoId,
+        latitud: location.latitude,
+        longitud: location.longitude,
+        direccion: address || 'Dirección no disponible'
+      };
+
+      console.log('📡 Enviando datos de estacionamiento:', datosEstacionamiento);
+
+      // Llamar al backend
+      const response = await api.post('/estacionamientos', datosEstacionamiento);
+      
+      if (response.data.status) {
+        console.log('✅ Respuesta exitosa del backend:', response.data.message);
+        return response.data.estacionamiento;
+      } else {
+        console.log('❌ Error en respuesta del backend:', response.data.message);
+        Alert.alert('Error', response.data.message || 'No se pudo iniciar el estacionamiento');
+        return null;
+      }
     } catch (error) {
-      console.error('Error verificando SEM:', error);
-      return false;
+      console.error('❌ Error en iniciarEstacionamientoBackend:', error);
+      
+      if (error.response?.status === 409) {
+        Alert.alert('Estacionamiento activo', 'Ya tienes un estacionamiento activo.');
+      } else {
+        Alert.alert('Error de conexión', 'No se pudo conectar con el servidor.');
+      }
+      return null;
     }
   };
 
-  // Usar en useEffect para mostrar estado
-  useEffect(() => {
-    verificarSEMInstalada().then(instalada => {
-      if (!instalada) {
-        console.log('💡 Sugerencia: El usuario debería instalar SEM La Plata');
+  // ✅ Nueva función para cargar vehículos del usuario
+  const cargarVehiculos = async () => {
+    setCargandoVehiculos(true);
+    try {
+      const response = await api.get('/vehiculos');
+      if (response.data.status && response.data.vehiculos.length > 0) {
+        setVehiculos(response.data.vehiculos);
+        return response.data.vehiculos;
+      } else {
+        setVehiculos([]);
+        return [];
       }
-    });
+    } catch (error) {
+      console.error("Error cargando vehículos:", error);
+      Alert.alert('Error', 'No se pudo obtener tu lista de vehículos.');
+      return null;
+    } finally {
+      setCargandoVehiculos(false);
+    }
+  };
+
+  // ✅ Nueva función que se ejecuta al seleccionar un vehículo del modal
+  const handleSeleccionarVehiculo = (vehiculo) => {
+    setSelectorVehiculoVisible(false);
+    
+    // Ahora que tenemos el vehículo, mostramos la confirmación final
+    Alert.alert(
+      'Confirmar Estacionamiento',
+      `¿Iniciar estacionamiento para el vehículo ${vehiculo.patente} en ${zonaDetectada?.nombre || 'esta zona'}?\n\nCosto actual: ${costoActual} por hora`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Iniciar y Abrir SEM',
+          onPress: async () => {
+            const estacionamiento = await iniciarEstacionamientoBackend(vehiculo.id);
+            if (estacionamiento) {
+              // Si se requiere pago, intentar abrir la app SEM
+              if (estacionamiento.requiere_pago) {
+                await abrirAppSEMRealMejorada(); // Usando la función que ya tenías
+              }
+              Alert.alert(
+                'Estacionamiento Iniciado',
+                'Tu estacionamiento se ha registrado correctamente.',
+                [{ text: 'Ver mi Estacionamiento', onPress: () => navigation.navigate('Car') }, { text: 'OK' }]
+              );
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // ✅ Función PRINCIPAL MODIFICADA: Ahora abre el selector de vehículo
+  const iniciarEstacionamientoYAbrirSEM = async () => {
+    try {
+      // Paso 1: Verificar si ya hay un estacionamiento activo
+      const estacionamientoActivo = await verificarEstacionamientoActivo();
+      if (estacionamientoActivo) {
+        Alert.alert(
+          'Estacionamiento activo',
+          'Ya tienes un estacionamiento activo. ¿Quieres verlo?',
+          [
+            { text: 'Ver estacionamiento', onPress: () => navigation.navigate('Car') },
+            { text: 'Cancelar', style: 'cancel' }
+          ]
+        );
+        return;
+      }
+
+      // Paso 2: Cargar vehículos del usuario
+      const vehiculosDisponibles = await cargarVehiculos();
+
+      if (vehiculosDisponibles === null) return; // Hubo un error al cargar
+
+      if (vehiculosDisponibles.length === 0) {
+        Alert.alert(
+          'Sin Vehículo Registrado',
+          'Necesitas agregar un vehículo antes de poder estacionar.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Agregar Vehículo', onPress: () => navigation.navigate('Car') }
+          ]
+        );
+        return;
+      }
+
+      // Paso 3: Mostrar el modal para seleccionar el vehículo
+      setSelectorVehiculoVisible(true);
+
+    } catch (error) {
+      console.error('❌ Error en el proceso de inicio:', error);
+      Alert.alert('Error', 'Ocurrió un error inesperado. Intenta nuevamente.');
+    }
+  };
+
+  // ✅ useEffect mejorado para verificar estacionamiento activo al cargar la pantalla
+  useEffect(() => {
+    const verificarEstacionamientoAlCargar = async () => {
+      try {
+        const estacionamiento = await verificarEstacionamientoActivo();
+        
+        if (estacionamiento) {
+          console.log('⚠️ Usuario tiene estacionamiento activo:', {
+            id: estacionamiento.id,
+            direccion: estacionamiento.direccion || 'Ubicación no disponible',
+            fecha_inicio: estacionamiento.fecha_inicio,
+            hora_inicio: estacionamiento.hora_inicio,
+            zona: estacionamiento.zona?.nombre || 'Zona no especificada'
+          });
+          
+          // Opcional: Mostrar una notificación discreta en la UI
+          // Podrías agregar un estado para mostrar esto en el componente
+        } else {
+          console.log('ℹ️ No hay estacionamiento activo');
+        }
+      } catch (error) {
+        console.log('ℹ️ Error verificando estacionamiento activo:', error.message);
+        // No mostrar error al usuario, es solo verificación de fondo
+      }
+    };
+
+    verificarEstacionamientoAlCargar();
   }, []);
 
   const zoneStyles = getZoneStyles(zonaDetectada);
@@ -740,7 +959,7 @@ export default function PayScreen({ navigation }) {
                 : tw`bg-gray-400`
             ]}
             disabled={!zonaDetectada || zonaDetectada.es_prohibido_estacionar || estadoZona.color !== 'red'}
-            onPress={abrirAppSEMReal} // ✅ Usar la función con datos reales
+            onPress={iniciarEstacionamientoYAbrirSEM}
           >
             <Text style={tw`text-white text-center mr-2`}>
               <Ionicons name="open-outline" size={20} color="white" />
@@ -773,6 +992,43 @@ export default function PayScreen({ navigation }) {
           <Text style={[tw`text-xs text-blue-500`]}>- Se te cobrará desde el momento que inicies hasta que finalices o termine el horario</Text>
         </View>
       </View>
+
+      {/* ✅ Modal para seleccionar vehículo */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={selectorVehiculoVisible}
+        onRequestClose={() => setSelectorVehiculoVisible(false)}
+      >
+        <View style={tw`flex-1 justify-center items-center bg-black bg-opacity-50`}>
+          <View style={tw`bg-white rounded-lg p-6 w-11/12 max-h-[60%]`}>
+            <Text style={tw`text-xl font-bold mb-4`}>Selecciona un vehículo</Text>
+            {cargandoVehiculos ? (
+              <ActivityIndicator size="large" color="#3236FF" />
+            ) : (
+              <FlatList
+                data={vehiculos}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => handleSeleccionarVehiculo(item)}
+                    style={tw`p-4 border-b border-gray-200 flex-row items-center`}
+                  >
+                    <Ionicons name="car-sport-outline" size={22} style={tw`mr-4 text-gray-600`} />
+                    <Text style={tw`text-lg`}>{item.patente}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+            <TouchableOpacity
+              onPress={() => setSelectorVehiculoVisible(false)}
+              style={tw`py-3 mt-4`}
+            >
+              <Text style={tw`text-gray-600 text-center font-bold`}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
