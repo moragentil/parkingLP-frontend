@@ -16,6 +16,11 @@
       "supportsTablet": true,
       "config": {
         "googleMapsApiKey": "AIzaSyDSXXc-lqWU6vtuR30KDBKZgsZFo_nhrSc"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Necesitamos tu ubicación para detectar si te estás moviendo y recordarte desactivar el estacionamiento.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Para que los recordatorios de estacionamiento funcionen, necesitamos acceder a tu ubicación incluso cuando la app está en segundo plano.",
+        "NSMotionUsageDescription": "Usamos los sensores de movimiento para mejorar la detección de velocidad y ahorrar batería."
       }
     },
     "android": {
@@ -28,10 +33,25 @@
         "googleMaps": {
           "apiKey": "AIzaSyDSXXc-lqWU6vtuR30KDBKZgsZFo_nhrSc"
         }
-      }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
+    ]
   }
 }
