@@ -768,9 +768,9 @@ export default function PayScreen({ navigation }) {
       if (estacionamientoActivo) {
         Alert.alert(
           'Estacionamiento activo',
-          'Ya tienes un estacionamiento activo. ¿Quieres verlo?',
+          'Ya tienes un estacionamiento activo. ¿Quieres gestionarlo en la app SEM?',
           [
-            { text: 'Ver estacionamiento', onPress: () => navigation.navigate('Car') },
+            { text: 'Abrir App SEM', onPress: abrirAppSEMRealMejorada },
             { text: 'Cancelar', style: 'cancel' }
           ]
         );
