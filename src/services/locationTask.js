@@ -4,6 +4,9 @@ import { fetchParkingStatus } from './parkingService';
 
 export const LOCATION_TASK_NAME = 'background-location-task';
 
+// Keep track of notification state between task executions
+let notificationSent = false;
+
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     if (error) {
         console.error("Error en la tarea de ubicación:", error);
@@ -40,9 +43,9 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                 trigger: null,
                 });
                 notificationSent = true;
-            } else if (speedKmh < 10) { // Reseteamos si la velocidad baja considerablemente
+            } /*else if (speedKmh < 10) { // Reseteamos si la velocidad baja considerablemente
                 notificationSent = false;
-            }
+            }*/
         }
     }
 
