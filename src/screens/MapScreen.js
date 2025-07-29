@@ -30,7 +30,7 @@ export default function MapScreen({ navigation }) {
       
       if (response.data.status) {
         setZonasLeyenda(response.data.leyenda);
-        console.log('Zonas cargadas:', response.data.leyenda);
+        console.log('🗺️ Zonas leyenda cargadas:', response.data.leyenda.length);
       } else {
         Alert.alert('Error', response.data.message || 'No se pudieron cargar las zonas');
       }
@@ -150,31 +150,59 @@ export default function MapScreen({ navigation }) {
     }
   };
 
-  const formatearHorariosParaMostrar = (horariosArray) => {
-    if (!horariosArray || horariosArray.length === 0) {
+  // ✅ Nueva función para procesar horarios_por_dia
+  const formatearHorariosParaMostrar = (horariosPorDia) => {
+    if (!horariosPorDia || Object.keys(horariosPorDia).length === 0) {
       return ['Sin horarios'];
     }
     
-    // Procesar los horarios para mostrarlos como en la imagen
+    console.log('🗺️ Procesando horarios por día:', horariosPorDia);
+    
     const horariosFormateados = [];
     
-    horariosArray.forEach(horario => {
-      if (horario.includes('Lun-Vie') || horario.includes('Lun-Vier')) {
-        // Extraer solo el horario, no los días
-        const soloHorario = horario.replace(/Lun-Vie[rs]?:\s*/, '');
-        horariosFormateados.push(`Lun - Vier ${soloHorario}`);
-      } else if (horario.includes('Sáb') || horario.includes('Sab')) {
-        const soloHorario = horario.replace(/Sáb?:\s*/, '');
-        horariosFormateados.push(`Sáb ${soloHorario}`);
-      } else if (horario.includes('Dom')) {
-        const soloHorario = horario.replace(/Dom:\s*/, '');
-        horariosFormateados.push(`Dom ${soloHorario}`);
-      } else {
-        horariosFormateados.push(horario);
+    // Procesar Lunes a Viernes
+    const diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+    const horariosLV = [];
+    
+    diasSemana.forEach(dia => {
+      if (horariosPorDia[dia]) {
+        const horario = horariosPorDia[dia];
+        const horaInicio = horario.hora_inicio.substring(0, 5); // Solo HH:MM
+        const horaFin = horario.hora_fin.substring(0, 5);
+        horariosLV.push(`${horaInicio} - ${horaFin}`);
       }
     });
     
-    return horariosFormateados;
+    // Verificar si todos los horarios de L-V son iguales
+    if (horariosLV.length > 0) {
+      const horariosUnicos = [...new Set(horariosLV)];
+      if (horariosUnicos.length === 1) {
+        // Todos iguales
+        horariosFormateados.push(`Lun-Vie ${horariosUnicos[0]}`);
+      } else {
+        // Diferentes horarios
+        horariosFormateados.push(`Lun-Vie ${horariosUnicos.join(', ')}`);
+      }
+    }
+    
+    // Procesar Sábado
+    if (horariosPorDia.sabado) {
+      const sabado = horariosPorDia.sabado;
+      const horaInicio = sabado.hora_inicio.substring(0, 5);
+      const horaFin = sabado.hora_fin.substring(0, 5);
+      horariosFormateados.push(`Sáb ${horaInicio} - ${horaFin}`);
+    }
+    
+    // Procesar Domingo
+    if (horariosPorDia.domingo) {
+      const domingo = horariosPorDia.domingo;
+      const horaInicio = domingo.hora_inicio.substring(0, 5);
+      const horaFin = domingo.hora_fin.substring(0, 5);
+      horariosFormateados.push(`Dom ${horaInicio} - ${horaFin}`);
+    }
+    
+    console.log('🗺️ Horarios formateados:', horariosFormateados);
+    return horariosFormateados.length > 0 ? horariosFormateados : ['Sin horarios'];
   };
 
   const ordenarZonas = (zonas) => {
@@ -214,6 +242,10 @@ export default function MapScreen({ navigation }) {
   };
 
   const renderZonaItem = (zona) => {
+    // ✅ Log para debug específico de cada zona
+    console.log(`🗺️ Renderizando zona: ${zona.nombre}`);
+    console.log(`🗺️ Horarios por día:`, zona.horarios_por_dia);
+
     if (zona.es_prohibido_estacionar) {
       return (
         <View key={zona.id} style={tw`flex-row p-3 items-center rounded-lg w-full justify-center bg-gray-300 mb-1`}>
@@ -224,7 +256,7 @@ export default function MapScreen({ navigation }) {
 
     const bgColorStyle = getZoneBackgroundColor(zona);
     const textColorStyle = getZoneTextColor(zona);
-    const horariosFormateados = formatearHorariosParaMostrar(zona.horarios_formateados);
+    const horariosFormateados = formatearHorariosParaMostrar(zona.horarios_por_dia); // ✅ Usar horarios_por_dia
 
     return (
       <View key={zona.id} style={[tw`flex-row p-2 pr-2 mb-1 items-center rounded-lg w-full justify-between`, bgColorStyle]}>
@@ -286,7 +318,7 @@ export default function MapScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Leyenda de Zonas - implementación existente */}
+        {/* Leyenda de Zonas */}
         <View style={[tw`bg-white rounded-lg p-3 mt-4 shadow`]}>
           <View style={tw`flex-row justify-between items-center mb-2`}>
             <Text style={tw`text-gray-800 text-lg font-bold`}>Leyenda de Zonas</Text>
