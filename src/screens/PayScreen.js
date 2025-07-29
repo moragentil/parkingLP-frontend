@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Linking, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import tw from '../utils/tailwind';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -7,7 +7,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import sharedStyles from '../utils/sharedStyles';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { useZonas } from '../hooks/useZonas';
-import api from '../services/api'; // ✅ Importar api para obtener tarifas
+import api from '../services/api';
 
 export default function PayScreen({ navigation }) {
   const [showDetails, setShowDetails] = useState(false);
@@ -266,9 +266,356 @@ export default function PayScreen({ navigation }) {
     };
   };
 
+  // ✅ Nueva función para abrir la app SEM
+  const abrirAppSEM = async () => {
+    // Esquemas de URL para abrir la app SEM
+    const urlSchemes = {
+      android: 'ar.edu.unlp.semmobile.laplata', // Reemplazar con el package name real de SEM
+      ios: 'SEM Mobile', // Reemplazar con el URL scheme real de SEM
+    };
+
+    // URLs de las tiendas de aplicaciones
+    const storeUrls = {
+      android: 'https://play.google.com/store/apps/details?id=com.municipio.sem', // Reemplazar con la URL real
+      ios: 'https://apps.apple.com/app/sem/id123456789', // Reemplazar con la URL real
+    };
+
+    try {
+      let appUrl;
+      let storeUrl;
+
+      if (Platform.OS === 'android') {
+        // Para Android: usar package name
+        appUrl = `intent://launch#Intent;package=${urlSchemes.android};end`;
+        storeUrl = storeUrls.android;
+      } else {
+        // Para iOS: usar URL scheme
+        appUrl = urlSchemes.ios;
+        storeUrl = storeUrls.ios;
+      }
+
+      console.log('🚀 Intentando abrir app SEM con:', appUrl);
+
+      // Verificar si la app está instalada
+      const canOpen = await Linking.canOpenURL(appUrl);
+      
+      if (canOpen) {
+        console.log('✅ App SEM encontrada, abriendo...');
+        await Linking.openURL(appUrl);
+      } else {
+        console.log('❌ App SEM no encontrada, redirigiendo a tienda...');
+        
+        // Mostrar confirmación antes de ir a la tienda
+        Alert.alert(
+          'App SEM no encontrada',
+          '¿Deseas descargar la aplicación SEM desde la tienda de aplicaciones?',
+          [
+            {
+              text: 'Cancelar',
+              style: 'cancel',
+            },
+            {
+              text: 'Descargar',
+              onPress: async () => {
+                try {
+                  await Linking.openURL(storeUrl);
+                } catch (error) {
+                  console.error('Error abriendo tienda:', error);
+                  Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
+                }
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error abriendo app SEM:', error);
+      
+      // Fallback: abrir tienda directamente
+      Alert.alert(
+        'Error',
+        'No se pudo abrir la aplicación. ¿Deseas ir a la tienda para descargarla?',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Ir a tienda',
+            onPress: async () => {
+              try {
+                const storeUrl = Platform.OS === 'android' 
+                  ? storeUrls.android 
+                  : storeUrls.ios;
+                await Linking.openURL(storeUrl);
+              } catch (storeError) {
+                console.error('Error abriendo tienda:', storeError);
+                Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
+  // ✅ Función alternativa usando nombres de paquete más comunes
+  const abrirAppSEMAlternativo = async () => {
+    // URLs comunes para apps de estacionamiento municipales
+    const possibleUrls = [
+      // Esquemas personalizados
+      'sem://',
+      'estacionamiento://',
+      'parquimetro://',
+      
+      // Package names de Android comunes
+      'com.laplata.sem',
+      'com.municipio.estacionamiento',
+      'ar.gov.laplata.sem',
+      'com.parkingapp.laplata',
+    ];
+
+    let appOpened = false;
+
+    // Intentar con cada URL posible
+    for (const url of possibleUrls) {
+      try {
+        let finalUrl = url;
+        
+        // Para Android, convertir package name a intent
+        if (Platform.OS === 'android' && url.startsWith('com.')) {
+          finalUrl = `intent://launch#Intent;package=${url};end`;
+        }
+
+        const canOpen = await Linking.canOpenURL(finalUrl);
+        
+        if (canOpen) {
+          console.log(`✅ App encontrada con: ${url}`);
+          await Linking.openURL(finalUrl);
+          appOpened = true;
+          break;
+        }
+      } catch (error) {
+        console.log(`❌ No se pudo abrir con: ${url}`);
+        continue;
+      }
+    }
+
+    // Si no se pudo abrir ninguna app
+    if (!appOpened) {
+      console.log('❌ Ninguna app SEM encontrada');
+      
+      Alert.alert(
+        'Aplicación SEM no encontrada',
+        'Para continuar necesitas la aplicación oficial SEM. ¿Deseas buscarla en la tienda?',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Buscar en tienda',
+            onPress: async () => {
+              try {
+                // URLs de búsqueda en las tiendas
+                const searchUrl = Platform.OS === 'android'
+                  ? 'https://play.google.com/store/search?q=sem+estacionamiento+la+plata'
+                  : 'https://apps.apple.com/search?term=sem+estacionamiento';
+                
+                await Linking.openURL(searchUrl);
+              } catch (error) {
+                console.error('Error abriendo búsqueda en tienda:', error);
+                Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
+              }
+            },
+          },
+        ]
+      );
+    }
+  };
+
+  // ✅ Función actualizada con datos reales de SEM La Plata
+  const abrirAppSEMReal = async () => {
+    try {
+      let appUrl, storeUrl;
+
+      if (Platform.OS === 'android') {
+        // Package name real de SEM La Plata
+        const androidPackage = 'ar.edu.unlp.semmobile.laplata';
+        appUrl = `intent://launch#Intent;package=${androidPackage};end`;
+        storeUrl = `https://play.google.com/store/apps/details?id=${androidPackage}`;
+      } else {
+        // Para iOS - usar URL scheme genérico ya que no hay uno documentado
+        appUrl = 'semmobile://';
+        storeUrl = 'https://apps.apple.com/app/sem-mobile/id1387705895';
+      }
+
+      console.log('🚀 Intentando abrir SEM La Plata con:', appUrl);
+
+      // Verificar si la app está instalada
+      const canOpen = await Linking.canOpenURL(appUrl);
+      
+      if (canOpen) {
+        console.log('✅ App SEM La Plata encontrada, abriendo...');
+        await Linking.openURL(appUrl);
+      } else {
+        console.log('❌ App SEM La Plata no encontrada, redirigiendo a tienda...');
+        
+        Alert.alert(
+          'App SEM no encontrada',
+          'Para continuar necesitas la aplicación oficial SEM La Plata. ¿Deseas descargarla?',
+          [
+            {
+              text: 'Cancelar',
+              style: 'cancel',
+            },
+            {
+              text: 'Descargar',
+              onPress: async () => {
+                try {
+                  await Linking.openURL(storeUrl);
+                } catch (error) {
+                  console.error('Error abriendo tienda:', error);
+                  Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
+                }
+              },
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error abriendo app SEM:', error);
+      
+      // Fallback directo a la tienda
+      Alert.alert(
+        'Error',
+        'No se pudo verificar la aplicación. ¿Deseas ir directamente a la tienda?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { 
+            text: 'Ir a tienda', 
+            onPress: () => Linking.openURL(fallbackUrl)
+          }
+        ]
+      );
+    }
+  };
+
+  // ✅ Función mejorada con múltiples intentos para mayor compatibilidad
+  const abrirAppSEMConFallbacks = async () => {
+    const intentos = [
+      {
+        nombre: 'SEM La Plata (oficial)',
+        android: 'intent://launch#Intent;package=ar.edu.unlp.semmobile.laplata;end',
+        ios: 'semmobile://',
+      },
+      {
+        nombre: 'SEM Mobile (genérico)',
+        android: 'intent://launch#Intent;package=ar.edu.unlp.sem;end',
+        ios: 'sem://',
+      },
+      {
+        nombre: 'Estacionamiento La Plata',
+        android: 'intent://launch#Intent;package=com.laplata.estacionamiento;end',
+        ios: 'estacionamiento://',
+      }
+    ];
+
+    let appAbierta = false;
+
+    for (const intento of intentos) {
+      try {
+        const url = Platform.OS === 'android' ? intento.android : intento.ios;
+        console.log(`🔍 Probando: ${intento.nombre} con ${url}`);
+        
+        const canOpen = await Linking.canOpenURL(url);
+        
+        if (canOpen) {
+          console.log(`✅ ${intento.nombre} encontrada, abriendo...`);
+          await Linking.openURL(url);
+          appAbierta = true;
+          break;
+        }
+      } catch (error) {
+        console.log(`❌ Error con ${intento.nombre}:`, error.message);
+        continue;
+      }
+    }
+
+    // Si ninguna app se pudo abrir
+    if (!appAbierta) {
+      console.log('❌ Ninguna app SEM encontrada');
+      
+      const storeUrl = Platform.OS === 'android'
+        ? 'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata'
+        : 'https://apps.apple.com/app/sem-mobile/id1387705895';
+      
+      Alert.alert(
+        'Aplicación SEM requerida',
+        'Para iniciar el estacionamiento necesitas la app oficial SEM La Plata.',
+        [
+          {
+            text: 'Cancelar',
+            style: 'cancel',
+          },
+          {
+            text: 'Descargar App',
+            onPress: async () => {
+              try {
+                await Linking.openURL(storeUrl);
+              } catch (error) {
+                console.error('Error abriendo tienda:', error);
+                Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
+              }
+            },
+          },
+          {
+            text: 'Buscar manualmente',
+            onPress: async () => {
+              const searchUrl = Platform.OS === 'android'
+                ? 'https://play.google.com/store/search?q=sem+la+plata+estacionamiento'
+                : 'https://apps.apple.com/search?term=sem+la+plata';
+            
+              try {
+                await Linking.openURL(searchUrl);
+              } catch (error) {
+                console.error('Error abriendo búsqueda:', error);
+              }
+            },
+          }
+        ]
+      );
+    }
+  };
+
+  // ✅ Función para verificar si SEM está instalada (útil para mostrar íconos o estados)
+  const verificarSEMInstalada = async () => {
+    try {
+      const appUrl = Platform.OS === 'android'
+        ? 'intent://launch#Intent;package=ar.edu.unlp.semmobile.laplata;end'
+        : 'semmobile://';
+    
+      const estaInstalada = await Linking.canOpenURL(appUrl);
+      console.log('📱 SEM La Plata instalada:', estaInstalada);
+      return estaInstalada;
+    } catch (error) {
+      console.error('Error verificando SEM:', error);
+      return false;
+    }
+  };
+
+  // Usar en useEffect para mostrar estado
+  useEffect(() => {
+    verificarSEMInstalada().then(instalada => {
+      if (!instalada) {
+        console.log('💡 Sugerencia: El usuario debería instalar SEM La Plata');
+      }
+    });
+  }, []);
+
   const zoneStyles = getZoneStyles(zonaDetectada);
   const horariosFormateados = formatearHorarios(zonaDetectada);
-  const tarifasFormateadas = obtenerTarifasFormateadas(); // ✅ Usar tarifas del backend
+  const tarifasFormateadas = obtenerTarifasFormateadas();
   const costoActual = obtenerCostoActual(zonaDetectada);
   const estadoZona = obtenerEstadoZona(zonaDetectada);
 
@@ -393,6 +740,7 @@ export default function PayScreen({ navigation }) {
                 : tw`bg-gray-400`
             ]}
             disabled={!zonaDetectada || zonaDetectada.es_prohibido_estacionar || estadoZona.color !== 'red'}
+            onPress={abrirAppSEMReal} // ✅ Usar la función con datos reales
           >
             <Text style={tw`text-white text-center mr-2`}>
               <Ionicons name="open-outline" size={20} color="white" />
@@ -403,7 +751,7 @@ export default function PayScreen({ navigation }) {
                 : zonaDetectada.es_prohibido_estacionar 
                   ? 'Prohibido estacionar'
                   : estadoZona.color === 'red'
-                    ? 'Abrir App SEM y Comenzar'
+                    ? 'Abrir app SEM y Comenzar'
                     : 'Estacionamiento gratuito'
               }
             </Text>
