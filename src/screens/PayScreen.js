@@ -7,6 +7,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import sharedStyles from '../utils/sharedStyles';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { useZonas } from '../hooks/useZonas';
+import api from '../services/api'; // ✅ Importar api para obtener tarifas
 
 export default function PayScreen({ navigation }) {
   const [showDetails, setShowDetails] = useState(false);
@@ -14,12 +15,15 @@ export default function PayScreen({ navigation }) {
   const [address, setAddress] = useState('Detectando ubicación...');
   const [zonaDetectada, setZonaDetectada] = useState(null);
   const [loadingUbicacion, setLoadingUbicacion] = useState(true);
+  const [tarifasHorarias, setTarifasHorarias] = useState([]); // ✅ Estado para tarifas del backend
+  const [loadingTarifas, setLoadingTarifas] = useState(true); // ✅ Estado de carga de tarifas
 
   const { zonas, loading: loadingZonas, cargarZonasParaMapa, buscarZonaPorUbicacion } = useZonas();
 
   useEffect(() => {
     getCurrentLocation();
     cargarZonasParaMapa();
+    cargarTarifasHorarias(); // ✅ Cargar tarifas al inicio
   }, []);
 
   useEffect(() => {
@@ -28,6 +32,25 @@ export default function PayScreen({ navigation }) {
       detectarZona();
     }
   }, [location, zonas]);
+
+  // ✅ Función para cargar tarifas horarias del backend
+  const cargarTarifasHorarias = async () => {
+    try {
+      setLoadingTarifas(true);
+      const response = await api.get('/tarifas-horarias');
+      
+      if (response.data.status) {
+        setTarifasHorarias(response.data.tarifas);
+        console.log('💰 Tarifas horarias cargadas:', response.data.tarifas);
+      } else {
+        console.error('Error cargando tarifas:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error cargando tarifas horarias:', error);
+    } finally {
+      setLoadingTarifas(false);
+    }
+  };
 
   const getCurrentLocation = async () => {
     try {
@@ -153,54 +176,65 @@ export default function PayScreen({ navigation }) {
     return horariosFormateados;
   };
 
-  // Función para obtener tarifas (simuladas - deberían venir del backend)
-  const obtenerTarifas = (zona) => {
-    if (!zona) return [];
+  // ✅ Función para obtener tarifa actual según la hora
+  const obtenerTarifaActual = () => {
+    if (tarifasHorarias.length === 0) return null;
     
-    // Por ahora usar tarifas simuladas basadas en horarios
-    const horarios = formatearHorarios(zona);
-    const tarifas = [];
+    const ahora = new Date();
+    const horaActual = ahora.getHours() * 100 + ahora.getMinutes(); // Formato HHMM
     
-    horarios.forEach((horario, index) => {
-      if (horario.includes('Lun-Vier')) {
-        // Simular diferentes tarifas según el horario
-        if (horario.includes('07:00') && horario.includes('14:00')) {
-          tarifas.push('$500');
-        } else if (horario.includes('14:00') && horario.includes('20:00')) {
-          tarifas.push('$300');
-        } else {
-          tarifas.push('$300');
-        }
-      } else {
-        tarifas.push('$300');
+    console.log('🕐 Hora actual:', horaActual);
+    
+    // Buscar la tarifa que corresponde a la hora actual
+    for (const tarifa of tarifasHorarias) {
+      // Convertir las horas del backend a formato HHMM
+      const horaInicio = new Date(tarifa.hora_inicio);
+      const horaFin = new Date(tarifa.hora_fin);
+      
+      const inicioHHMM = horaInicio.getHours() * 100 + horaInicio.getMinutes();
+      const finHHMM = horaFin.getHours() * 100 + horaFin.getMinutes();
+      
+      console.log(`💰 Tarifa ${tarifa.nombre}: ${inicioHHMM} - ${finHHMM} ($${tarifa.precio_por_hora})`);
+      
+      if (horaActual >= inicioHHMM && horaActual < finHHMM) {
+        console.log(`✅ Tarifa actual encontrada: ${tarifa.nombre} - $${tarifa.precio_por_hora}`);
+        return tarifa;
       }
-    });
-
-    return tarifas;
+    }
+    
+    console.log('❌ No se encontró tarifa para la hora actual');
+    return null;
   };
 
-  // Función para obtener costo actual
+  // ✅ Función para obtener todas las tarifas formateadas para mostrar
+  const obtenerTarifasFormateadas = () => {
+    if (tarifasHorarias.length === 0) return [];
+    
+    return tarifasHorarias.map(tarifa => {
+      const horaInicio = new Date(tarifa.hora_inicio);
+      const horaFin = new Date(tarifa.hora_fin);
+      
+      const inicioFormateado = `${horaInicio.getHours().toString().padStart(2, '0')}:${horaInicio.getMinutes().toString().padStart(2, '0')}`;
+      const finFormateado = `${horaFin.getHours().toString().padStart(2, '0')}:${horaFin.getMinutes().toString().padStart(2, '0')}`;
+      
+      return {
+        horario: `${inicioFormateado} - ${finFormateado}`,
+        precio: `$${parseInt(tarifa.precio_por_hora)}`,
+        nombre: tarifa.nombre
+      };
+    });
+  };
+
+  // ✅ Función para obtener costo actual usando tarifas del backend
   const obtenerCostoActual = (zona) => {
     if (!zona || zona.es_prohibido_estacionar) return '$0';
     
-    const ahora = new Date();
-    const horaActual = ahora.getHours();
-    const diaSemana = ahora.getDay();
-
-    // Lógica simple para determinar tarifa actual
-    if (diaSemana >= 1 && diaSemana <= 5) { // Lunes a viernes
-      if (horaActual >= 7 && horaActual < 14) {
-        return '$500';
-      } else if (horaActual >= 14 && horaActual < 20) {
-        return '$300';
-      }
-    } else if (diaSemana === 6) { // Sábado
-      if (horaActual >= 9 && horaActual < 20) {
-        return '$300';
-      }
+    const tarifaActual = obtenerTarifaActual();
+    if (tarifaActual) {
+      return `$${parseInt(tarifaActual.precio_por_hora)}`;
     }
-
-    return '$0';
+    
+    return '$0'; // Fuera de horario de pago
   };
 
   // Función para obtener estado de zona
@@ -215,26 +249,14 @@ export default function PayScreen({ navigation }) {
       };
     }
 
-    const ahora = new Date();
-    const horaActual = ahora.getHours();
-    const diaSemana = ahora.getDay();
-
-    if (diaSemana >= 1 && diaSemana <= 5) { // Lunes a viernes
-      if (horaActual >= 7 && horaActual < 20) {
-        return { 
-          mensaje: 'Pago Requerido', 
-          color: 'red',
-          bgColor: 'bg-red-100'
-        };
-      }
-    } else if (diaSemana === 6) { // Sábado
-      if (horaActual >= 9 && horaActual < 20) {
-        return { 
-          mensaje: 'Pago Requerido', 
-          color: 'red',
-          bgColor: 'bg-red-100'
-        };
-      }
+    const tarifaActual = obtenerTarifaActual();
+    
+    if (tarifaActual) {
+      return { 
+        mensaje: 'Pago Requerido', 
+        color: 'red',
+        bgColor: 'bg-red-100'
+      };
     }
 
     return { 
@@ -246,7 +268,7 @@ export default function PayScreen({ navigation }) {
 
   const zoneStyles = getZoneStyles(zonaDetectada);
   const horariosFormateados = formatearHorarios(zonaDetectada);
-  const tarifas = obtenerTarifas(zonaDetectada);
+  const tarifasFormateadas = obtenerTarifasFormateadas(); // ✅ Usar tarifas del backend
   const costoActual = obtenerCostoActual(zonaDetectada);
   const estadoZona = obtenerEstadoZona(zonaDetectada);
 
@@ -308,34 +330,36 @@ export default function PayScreen({ navigation }) {
         {showDetails && (
           <View style={tw`flex-row justify-between mt-4 mx-2`}>
             {/* Columna de horarios */}
-            <View style={tw`items-start`}>
-              <Text style={tw`text-gray-500 mb-2`}>Horarios de pago</Text>
+            <View style={tw`items-start flex-1`}>
+              <Text style={tw`text-gray-500 mb-2 font-semibold`}>Horarios de la zona</Text>
               {horariosFormateados.length > 0 ? (
                 horariosFormateados.map((horario, index) => (
-                  <Text key={index} style={tw`text-gray-500 font-semibold text-center`}>
+                  <Text key={index} style={tw`text-gray-700 text-sm mb-1`}>
                     {horario}
                   </Text>
                 ))
               ) : (
-                <Text style={tw`text-gray-500 font-semibold text-center`}>
-                  {zonaDetectada ? 'Sin horarios de pago' : 'Zona no detectada'}
+                <Text style={tw`text-gray-500 text-sm`}>
+                  {zonaDetectada ? 'Sin horarios definidos' : 'Zona no detectada'}
                 </Text>
               )}
             </View>
 
             {/* Columna de tarifas */}
-            <View style={tw`items-start`}>
-              <Text style={tw`text-gray-500 mb-2`}>Tarifa por hora</Text>
-              {tarifas.length > 0 ? (
-                tarifas.map((tarifa, index) => (
-                  <Text key={index} style={tw`text-green-600 font-semibold text-center`}>
-                    {tarifa}
-                  </Text>
+            <View style={tw`items-start flex-1 ml-4`}>
+              <Text style={tw`text-gray-500 mb-2 font-semibold`}>Tarifas por hora</Text>
+              {loadingTarifas ? (
+                <Text style={tw`text-gray-500 text-sm`}>Cargando tarifas...</Text>
+              ) : tarifasFormateadas.length > 0 ? (
+                tarifasFormateadas.map((tarifa, index) => (
+                  <View key={index} style={tw`mb-1`}>
+                    <Text style={tw`text-green-600 font-semibold text-sm`}>
+                      {tarifa.horario}: {tarifa.precio}
+                    </Text>
+                  </View>
                 ))
               ) : (
-                <Text style={tw`text-green-600 font-semibold text-center`}>
-                  {zonaDetectada ? zonaDetectada.tarifas_formateadas || '$0' : '$0'}
-                </Text>
+                <Text style={tw`text-gray-500 text-sm`}>No hay tarifas disponibles</Text>
               )}
             </View>
           </View>
@@ -352,7 +376,7 @@ export default function PayScreen({ navigation }) {
           <View style={tw`flex-row items-center justify-between`}>
             <Text style={tw`text-lg font-semibold`}>Costo hora actual:</Text>
             <Text style={[tw`text-2xl font-semibold`, sharedStyles.textColorBlue]}>
-              {costoActual}
+              {loadingTarifas ? 'Cargando...' : costoActual}
             </Text>
           </View>
           <Text style={tw`text-gray-500 mt-2`}>
