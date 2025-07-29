@@ -16,6 +16,10 @@ export default function CarScreen({ navigation }) {
     longitudeDelta: 0.005,
   });
 
+  const [estacionamientoActivo, setEstacionamientoActivo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [tiempoTranscurrido, setTiempoTranscurrido] = useState('');
+
   const [vehiculos, setVehiculos] = useState([]);
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState(null);
   const [selectorVisible, setSelectorVisible] = useState(false);
@@ -23,18 +27,59 @@ export default function CarScreen({ navigation }) {
   const [nuevaPatente, setNuevaPatente] = useState('');
   const [agregandoVehiculo, setAgregandoVehiculo] = useState(false);
 
-  // Ubicación simulada del auto estacionado (deberías reemplazar esto con datos del backend)
-  const carLocation = {
-    latitude: -34.9220,
-    longitude: -57.9540,
-    address: "Av. 13 entre 48 y 49"
-  };
-
-  // ✅ useEffect unificado para que se ejecute UNA SOLA VEZ al montar la pantalla
+  // ✅ useEffect para la carga inicial de datos (se ejecuta solo una vez)
   useEffect(() => {
-    cargarVehiculos();
-    getCurrentLocation();
-  }, []); // El array de dependencias vacío [] asegura que esto se ejecute solo una vez.
+    const inicializarPantalla = async () => {
+      setLoading(true);
+      await verificarEstacionamientoActivo();
+      await cargarVehiculos();
+      await getCurrentLocation();
+      setLoading(false);
+    };
+
+    inicializarPantalla();
+  }, []); 
+
+  // ✅ useEffect para manejar el temporizador del estacionamiento
+  useEffect(() => {
+    if (!estacionamientoActivo) {
+      setTiempoTranscurrido('');
+      return; // No hacer nada si no hay estacionamiento activo
+    }
+
+    // Actualizar el tiempo inmediatamente al cambiar el estado
+    setTiempoTranscurrido(calcularTiempoTranscurrido(estacionamientoActivo.hora_inicio));
+
+    // Intervalo para actualizar el tiempo transcurrido cada minuto
+    const intervalId = setInterval(() => {
+      setTiempoTranscurrido(calcularTiempoTranscurrido(estacionamientoActivo.hora_inicio));
+    }, 60000); // Actualizar cada minuto
+
+    // Limpiar el intervalo cuando el componente se desmonte o el estacionamiento cambie
+    return () => clearInterval(intervalId);
+  }, [estacionamientoActivo]); // Se ejecuta solo cuando 'estacionamientoActivo' cambia
+
+  const verificarEstacionamientoActivo = async () => {
+    try {
+      const response = await api.get('/estacionamiento-activo');
+      if (response.data.status && response.data.estacionamiento) {
+        const estacionamiento = response.data.estacionamiento;
+        setEstacionamientoActivo(estacionamiento);
+        setTiempoTranscurrido(calcularTiempoTranscurrido(estacionamiento.hora_inicio));
+        setMapRegion({
+          latitude: parseFloat(estacionamiento.latitud),
+          longitude: parseFloat(estacionamiento.longitud),
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        });
+      } else {
+        setEstacionamientoActivo(null);
+      }
+    } catch (error) {
+      console.error("Error verificando estacionamiento activo:", error);
+      setEstacionamientoActivo(null);
+    }
+  };
 
   const cargarVehiculos = async () => {
     try {
@@ -76,7 +121,9 @@ export default function CarScreen({ navigation }) {
   };
 
   const openInGoogleMaps = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${carLocation.latitude},${carLocation.longitude}&travelmode=walking`;
+    if (!estacionamientoActivo) return;
+    const { latitud, longitud } = estacionamientoActivo;
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitud},${longitud}&travelmode=walking`;
     
     Linking.canOpenURL(url)
       .then((supported) => {
@@ -105,6 +152,26 @@ export default function CarScreen({ navigation }) {
     return Math.round(distance);
   };
 
+  const calcularTiempoTranscurrido = (horaInicio) => {
+    if (!horaInicio) return '';
+    
+    const [horas, minutos, segundos] = horaInicio.split(':').map(Number);
+    const fechaInicio = new Date();
+    fechaInicio.setHours(horas, minutos, segundos, 0);
+
+    const ahora = new Date();
+    let diffMs = ahora - fechaInicio;
+    if (diffMs < 0) diffMs = 0;
+
+    const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (diffHoras > 0) {
+      return `${diffHoras}h ${diffMins}min`;
+    }
+    return `${diffMins} min`;
+  };
+
   const handleAgregarVehiculo = async () => {
     if (!nuevaPatente.trim()) {
       Alert.alert('Campo requerido', 'Por favor, ingresa la patente del vehículo.');
@@ -121,7 +188,7 @@ export default function CarScreen({ navigation }) {
         Alert.alert('Éxito', 'Vehículo agregado correctamente.');
         setModalVisible(false);
         setNuevaPatente('');
-        // Aquí podrías recargar la lista de vehículos si la estuvieras mostrando
+        cargarVehiculos();
       } else {
         Alert.alert('Error', response.data.message || 'No se pudo agregar el vehículo.');
       }
@@ -137,9 +204,18 @@ export default function CarScreen({ navigation }) {
     }
   };
 
-  const distance = userLocation 
-    ? calculateDistance(userLocation.latitude, userLocation.longitude, carLocation.latitude, carLocation.longitude)
-    : 250;
+  const distance = userLocation && estacionamientoActivo
+    ? calculateDistance(userLocation.latitude, userLocation.longitude, estacionamientoActivo.latitud, estacionamientoActivo.longitud)
+    : null;
+
+  if (loading) {
+    return (
+      <View style={tw`flex-1 justify-center items-center bg-gray-200`}>
+        <ActivityIndicator size="large" color="#3236FF" />
+        <Text style={tw`mt-2 text-gray-600`}>Cargando información...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={tw`flex-1 bg-gray-200`} contentContainerStyle={tw`p-4`}>
@@ -170,119 +246,138 @@ export default function CarScreen({ navigation }) {
 
       </View>
 
-      <View style={[tw`bg-white rounded-lg p-4 mt-4 shadow border-l-4`, sharedStyles.borderColorBlue]}>
-        <View style={tw`flex-row items-center mb-3`}>
-          <Ionicons name="car-outline" size={24} color="blue" />
-          <Text style={tw`text-lg font-bold text-gray-800 ml-2`}>Ubicación del auto</Text>
-        </View>
-        <View style={tw`flex-row justify-between mt-4 mx-2`}>
-          <View style={tw`items-start`}>
-            <View style={tw`flex-row items-center mb-2`}>
-              <View>
-                <Text style={tw`text-gray-500`}>Dirección</Text>
-                <Text style={tw`text-gray-800 font-semibold`}>{carLocation.address}</Text>
-              </View>
+      {estacionamientoActivo ? (
+        <>
+          <View style={[tw`bg-white rounded-lg p-4 mt-4 shadow border-l-4`, sharedStyles.borderColorBlue]}>
+            <View style={tw`flex-row items-center mb-3`}>
+              <Ionicons name="car-outline" size={24} color="blue" />
+              <Text style={tw`text-lg font-bold text-gray-800 ml-2`}>
+                Estacionamiento Activo ({estacionamientoActivo.vehiculo.patente})
+              </Text>
             </View>
-            <View style={tw`flex-row items-center`}>
-              <View>
-                <Text style={tw`text-gray-500`}>Distancia</Text>
-                <Text style={[tw`text-gray-800 font-semibold`]}>{distance}m</Text>
+            <View style={tw`flex-row justify-between mt-4 mx-2`}>
+              <View style={tw`items-start`}>
+                <View style={tw`flex-row items-center mb-2`}>
+                  <View>
+                    <Text style={tw`text-gray-500`}>Dirección</Text>
+                    <Text style={tw`text-gray-800 font-semibold`}>{estacionamientoActivo.direccion}</Text>
+                  </View>
+                </View>
+                <View style={tw`flex-row items-center`}>
+                  <View>
+                    <Text style={tw`text-gray-500`}>Distancia</Text>
+                    <Text style={[tw`text-gray-800 font-semibold`]}>
+                      {distance !== null ? `${distance}m` : 'Calculando...'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={tw`items-start`}>
+                <View style={tw`flex-row items-center mb-2`}>
+                  <View>
+                    <Text style={tw`text-gray-500`}>Estacionado</Text>
+                    <Text style={[tw`text-blue-600 font-semibold`]}>{estacionamientoActivo.hora_inicio.substring(0, 5)}</Text>
+                  </View>
+                </View>
+                <View style={tw`flex-row items-center`}>
+                  <View>
+                    <Text style={tw`text-gray-500`}>Tiempo</Text>
+                    <Text style={[tw`text-blue-600 font-semibold`]}>{tiempoTranscurrido}</Text>
+                  </View>
+                </View>
               </View>
             </View>
           </View>
-          <View style={tw`items-start`}>
-            <View style={tw`flex-row items-center mb-2`}>
-              <View>
-                <Text style={tw`text-gray-500`}>Estacionado</Text>
-                <Text style={[tw`text-blue-600 font-semibold`]}>16:30</Text>
-              </View>
-            </View>
-            <View style={tw`flex-row items-center`}>
-              <View>
-                <Text style={tw`text-gray-500`}>Tiempo</Text>
-                <Text style={[tw`text-blue-600 font-semibold`]}>3 min</Text>
-              </View>
+          <View style={[tw`bg-white rounded-t-lg p-4 mt-4 shadow `]}>
+            <View style={tw`flex-row items-center `}>
+              <Text><Ionicons name="navigate-outline" size={24} style={[tw``, sharedStyles.textColorBlue]}/></Text>
+              <Text style={tw`text-xl ml-2 font-semibold text-gray-800`}>Encontrá tu auto estacionado</Text>
             </View>
           </View>
-        </View>
-      </View>
-      <View style={[tw`bg-white rounded-t-lg p-4 mt-4 shadow `]}>
-        <View style={tw`flex-row items-center `}>
-          <Text><Ionicons name="navigate-outline" size={24} style={[tw``, sharedStyles.textColorBlue]}/></Text>
-          <Text style={tw`text-xl ml-2 font-semibold text-gray-800`}>Encontrá tu auto estacionado</Text>
-        </View>
-      </View>
-      <View style={[tw`h-44 w-full border overflow-hidden`, sharedStyles.borderColorBlue]}>
-        <MapView
-          style={tw`flex-1`}
-          region={mapRegion}
-          showsUserLocation={true}
-          showsMyLocationButton={true}
-          mapType="standard"
-        >
-          <Marker
-            coordinate={{
-              latitude: carLocation.latitude,
-              longitude: carLocation.longitude,
-            }}
-            title="Tu Auto"
-            description={carLocation.address}
-            pinColor="red"
-          >
-            <View style={tw`bg-red-500 rounded-full p-2`}>
-              <Ionicons name="car" size={20} color="white" />
-            </View>
-          </Marker>
-          {userLocation && (
-            <Marker
-              coordinate={{
-                latitude: userLocation.latitude,
-                longitude: userLocation.longitude,
-              }}
-              title="Tu ubicación"
-              description="Estás aquí"
-              pinColor="blue"
+          <View style={[tw`h-44 w-full border overflow-hidden`, sharedStyles.borderColorBlue]}>
+            <MapView
+              style={tw`flex-1`}
+              region={mapRegion}
+              showsUserLocation={true}
+              showsMyLocationButton={true}
+              mapType="standard"
             >
-              <View style={tw`bg-blue-500 rounded-full p-2`}>
-                <Ionicons name="person" size={16} color="white" />
-              </View>
-            </Marker>
-          )}
-        </MapView>
-        <TouchableOpacity
-          style={tw`absolute top-2 right-2 bg-white rounded-full p-2 shadow`}
-          onPress={() => {
-            setMapRegion({
-              latitude: (carLocation.latitude + (userLocation?.latitude || -34.9214)) / 2,
-              longitude: (carLocation.longitude + (userLocation?.longitude || -57.9544)) / 2,
-              latitudeDelta: 0.008,
-              longitudeDelta: 0.008,
-            });
-          }}
-        >
-          <Ionicons name="locate" size={20} color="blue" />
-        </TouchableOpacity>
-      </View>
-      <View>
-        <TouchableOpacity
-          style={[tw`rounded-b-lg p-4 flex-row items-center justify-center`, sharedStyles.bgCustomBlue]}
-          onPress={openInGoogleMaps}
-        >
-          <Ionicons name="navigate-outline" size={20} color="white" />
-          <Text style={tw`text-white text-center ml-2 font-bold`}>
-            Abrir en Google Maps
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <View style={[tw`bg-green-100 rounded-lg px-3 py-2 mt-4 shadow`, sharedStyles.borderColorBlue]}>
-        <View style={tw`flex-col `}>
-          <Text style={[tw`font-semibold text-green-700 text-base`]}>Estado del estacionamiento</Text>
-          <View style={tw`flex-row mt-2 justify-between items-center`}>
-            <Text style={[tw`text-green-700 text-sm`]}>Tiempo restante:</Text>
-            <Text style={[tw`text-green-700 text-sm`]}>2h 15min</Text>
+              <Marker
+                coordinate={{
+                  latitude: parseFloat(estacionamientoActivo.latitud),
+                  longitude: parseFloat(estacionamientoActivo.longitud),
+                }}
+                title="Tu Auto"
+                description={estacionamientoActivo.direccion}
+                pinColor="red"
+              >
+                <View style={tw`bg-red-500 rounded-full p-2`}>
+                  <Ionicons name="car" size={20} color="white" />
+                </View>
+              </Marker>
+              {userLocation && (
+                <Marker
+                  coordinate={{
+                    latitude: userLocation.latitude,
+                    longitude: userLocation.longitude,
+                  }}
+                  title="Tu ubicación"
+                  description="Estás aquí"
+                  pinColor="blue"
+                >
+                  <View style={tw`bg-blue-500 rounded-full p-2`}>
+                    <Ionicons name="person" size={16} color="white" />
+                  </View>
+                </Marker>
+              )}
+            </MapView>
+            <TouchableOpacity
+              style={tw`absolute top-2 right-2 bg-white rounded-full p-2 shadow`}
+              onPress={() => {
+                if (!userLocation) return;
+                setMapRegion({
+                  latitude: (parseFloat(estacionamientoActivo.latitud) + userLocation.latitude) / 2,
+                  longitude: (parseFloat(estacionamientoActivo.longitud) + userLocation.longitude) / 2,
+                  latitudeDelta: Math.abs(parseFloat(estacionamientoActivo.latitud) - userLocation.latitude) * 2,
+                  longitudeDelta: Math.abs(parseFloat(estacionamientoActivo.longitud) - userLocation.longitude) * 2,
+                });
+              }}
+            >
+              <Ionicons name="locate" size={20} color="blue" />
+            </TouchableOpacity>
           </View>
+          <View>
+            <TouchableOpacity
+              style={[tw`rounded-b-lg p-4 flex-row items-center justify-center`, sharedStyles.bgCustomBlue]}
+              onPress={openInGoogleMaps}
+            >
+              <Ionicons name="navigate-outline" size={20} color="white" />
+              <Text style={tw`text-white text-center ml-2 font-bold`}>
+                Abrir en Google Maps
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[tw`bg-green-100 rounded-lg px-3 py-2 mt-4 shadow`, sharedStyles.borderColorBlue]}>
+            <View style={tw`flex-col `}>
+              <Text style={[tw`font-semibold text-green-700 text-base`]}>Estado del estacionamiento</Text>
+              <View style={tw`flex-row mt-2 justify-between items-center`}>
+                <Text style={[tw`text-green-700 text-sm`]}>Zona:</Text>
+                <Text style={[tw`text-green-700 text-sm font-bold`]}>{estacionamientoActivo.zona?.nombre || 'No definida'}</Text>
+              </View>
+            </View>
+          </View>
+        </>
+      ) : (
+        <View style={tw`flex-1 justify-center items-center bg-gray-100 p-8 mt-4 rounded-lg`}>
+          <Ionicons name="car-sport-outline" size={48} color="gray" />
+          <Text style={tw`text-lg text-gray-600 mt-4 text-center`}>
+            No tienes ningún estacionamiento activo en este momento.
+          </Text>
+          <Text style={tw`text-sm text-gray-500 mt-2 text-center`}>
+            Puedes iniciar uno desde la pantalla "Pagar".
+          </Text>
         </View>
-      </View>
+      )}
 
       <Modal
         animationType="slide"
