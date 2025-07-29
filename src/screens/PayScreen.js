@@ -653,19 +653,15 @@ export default function PayScreen({ navigation }) {
         <View style={[tw`p-3 bg-blue-100 mt-2 rounded-lg`]}>
           <View style={tw`flex-row items-center justify-between`}>
             <Text style={tw`text-lg font-semibold`}>
-              {estacionamientoActivo ? 'Estacionamiento activo' : 'Costo hora actual'}:
+              Costo hora actual
             </Text>
             <Text style={[tw`text-2xl font-semibold`, sharedStyles.textColorBlue]}>
-              {loadingTarifas ? 'Cargando...' : 
-                estacionamientoActivo ? 
-                `$${estacionamientoActivo.monto_pagado || 0}` : 
+              {loadingTarifas ? 'Cargando...' :  
                 costoActual}
             </Text>
           </View>
           <Text style={tw`text-gray-500 mt-2`}>
-            {estacionamientoActivo 
-              ? `Iniciado a las ${estacionamientoActivo.hora_inicio} en ${estacionamientoActivo.direccion}`
-              : 'El costo final dependerá del tiempo real de estacionamiento'}
+            El costo final dependerá del tiempo real de estacionamiento 
           </Text>
         </View>
         
