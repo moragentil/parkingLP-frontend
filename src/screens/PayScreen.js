@@ -18,6 +18,7 @@ export default function PayScreen({ navigation }) {
   const [loadingUbicacion, setLoadingUbicacion] = useState(true);
   const [tarifasHorarias, setTarifasHorarias] = useState([]);
   const [loadingTarifas, setLoadingTarifas] = useState(true);
+  const [estacionamientoActivo, setEstacionamientoActivo] = useState(null);
 
   // ✅ Estados para el selector de vehículos
   const [vehiculos, setVehiculos] = useState([]);
@@ -33,17 +34,56 @@ export default function PayScreen({ navigation }) {
       
       // El backend devuelve status:true si hay uno activo
       if (response.data.status && response.data.estacionamiento) {
+        setEstacionamientoActivo(response.data.estacionamiento);
         return response.data.estacionamiento;
       }
       
       // Si no, devuelve null
+      setEstacionamientoActivo(null);
       return null;
     } catch (error) {
       // No es un error crítico si la respuesta es 404 (no encontrado)
       if (error.response?.status !== 404) {
         console.error('Error verificando estacionamiento activo:', error);
       }
+      setEstacionamientoActivo(null);
       return null;
+    }
+  };
+
+  // ✅ Función para finalizar el estacionamiento activo
+  const finalizarEstacionamientoBackend = async () => {
+    if (!estacionamientoActivo) return;
+    
+    try {
+      console.log('🚗 Finalizando estacionamiento activo:', estacionamientoActivo.id);
+      
+      const response = await api.post(`/estacionamientos/${estacionamientoActivo.id}/finalizar`);
+      
+      if (response.data.status) {
+        console.log('✅ Estacionamiento finalizado exitosamente');
+        setEstacionamientoActivo(null);
+        
+        // Opcional: Abrir app SEM después de finalizar
+        await abrirAppSEMRealMejorada();
+        
+        Alert.alert(
+          'Estacionamiento Finalizado',
+          'Tu estacionamiento ha sido finalizado correctamente.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        console.log('❌ Error finalizando estacionamiento:', response.data.message);
+        Alert.alert('Error', response.data.message || 'No se pudo finalizar el estacionamiento');
+      }
+    } catch (error) {
+      console.error('❌ Error en finalizarEstacionamientoBackend:', error);
+      
+      if (error.response?.status === 404) {
+        Alert.alert('No encontrado', 'El estacionamiento activo no fue encontrado');
+      } else {
+        Alert.alert('Error de conexión', 'No se pudo conectar con el servidor');
+      }
     }
   };
 
@@ -99,7 +139,8 @@ export default function PayScreen({ navigation }) {
   useEffect(() => {
     getCurrentLocation();
     cargarZonasParaMapa();
-    cargarTarifasHorarias(); // ✅ Cargar tarifas al inicio
+    cargarTarifasHorarias();
+    verificarEstacionamientoActivo(); // Verificar estacionamiento activo al cargar
   }, []);
 
   useEffect(() => {
@@ -342,329 +383,7 @@ export default function PayScreen({ navigation }) {
     };
   };
 
-  // ✅ Nueva función para abrir la app SEM
-  const abrirAppSEM = async () => {
-    // Esquemas de URL para abrir la app SEM
-    const urlSchemes = {
-      android: 'ar.edu.unlp.semmobile.laplata', // Reemplazar con el package name real de SEM
-      ios: 'SEM Mobile', // Reemplazar con el URL scheme real de SEM
-    };
-
-    // URLs de las tiendas de aplicaciones
-    const storeUrls = {
-      android: 'https://play.google.com/store/apps/details?id=com.municipio.sem', // Reemplazar con la URL real
-      ios: 'https://apps.apple.com/app/sem/id123456789', // Reemplazar con la URL real
-    };
-
-    try {
-      let appUrl;
-      let storeUrl;
-
-      if (Platform.OS === 'android') {
-        // Para Android: usar package name
-        appUrl = `intent://launch#Intent;package=${urlSchemes.android};end`;
-        storeUrl = storeUrls.android;
-      } else {
-        // Para iOS: usar URL scheme
-        appUrl = urlSchemes.ios;
-        storeUrl = storeUrls.ios;
-      }
-
-      console.log('🚀 Intentando abrir app SEM con:', appUrl);
-
-      // Verificar si la app está instalada
-      const canOpen = await Linking.canOpenURL(appUrl);
-      
-      if (canOpen) {
-        console.log('✅ App SEM encontrada, abriendo...');
-        await Linking.openURL(appUrl);
-      } else {
-        console.log('❌ App SEM no encontrada, redirigiendo a tienda...');
-        
-        // Mostrar confirmación antes de ir a la tienda
-        Alert.alert(
-          'App SEM no encontrada',
-          '¿Deseas descargar la aplicación SEM desde la tienda de aplicaciones?',
-          [
-            {
-              text: 'Cancelar',
-              style: 'cancel',
-            },
-            {
-              text: 'Descargar',
-              onPress: async () => {
-                try {
-                  await Linking.openURL(storeUrl);
-                } catch (error) {
-                  console.error('Error abriendo tienda:', error);
-                  Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
-                }
-              },
-            },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error abriendo app SEM:', error);
-      
-      // Fallback: abrir tienda directamente
-      Alert.alert(
-        'Error',
-        'No se pudo abrir la aplicación. ¿Deseas ir a la tienda para descargarla?',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
-          {
-            text: 'Ir a tienda',
-            onPress: async () => {
-              try {
-                const storeUrl = Platform.OS === 'android' 
-                  ? storeUrls.android 
-                  : storeUrls.ios;
-                await Linking.openURL(storeUrl);
-              } catch (storeError) {
-                console.error('Error abriendo tienda:', storeError);
-                Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
-              }
-            },
-          },
-        ]
-      );
-    }
-  };
-
-  // ✅ Función alternativa usando nombres de paquete más comunes
-  const abrirAppSEMAlternativo = async () => {
-    // URLs comunes para apps de estacionamiento municipales
-    const possibleUrls = [
-      // Esquemas personalizados
-      'sem://',
-      'estacionamiento://',
-      'parquimetro://',
-      
-      // Package names de Android comunes
-      'com.laplata.sem',
-      'com.municipio.estacionamiento',
-      'ar.gov.laplata.sem',
-      'com.parkingapp.laplata',
-    ];
-
-    let appOpened = false;
-
-    // Intentar con cada URL posible
-    for (const url of possibleUrls) {
-      try {
-        let finalUrl = url;
-        
-        // Para Android, convertir package name a intent
-        if (Platform.OS === 'android' && url.startsWith('com.')) {
-          finalUrl = `intent://launch#Intent;package=${url};end`;
-        }
-
-        const canOpen = await Linking.canOpenURL(finalUrl);
-        
-        if (canOpen) {
-          console.log(`✅ App encontrada con: ${url}`);
-          await Linking.openURL(finalUrl);
-          appOpened = true;
-          break;
-        }
-      } catch (error) {
-        console.log(`❌ No se pudo abrir con: ${url}`);
-        continue;
-      }
-    }
-
-    // Si no se pudo abrir ninguna app
-    if (!appOpened) {
-      console.log('❌ Ninguna app SEM encontrada');
-      
-      Alert.alert(
-        'Aplicación SEM no encontrada',
-        'Para continuar necesitas la aplicación oficial SEM. ¿Deseas buscarla en la tienda?',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
-          {
-            text: 'Buscar en tienda',
-            onPress: async () => {
-              try {
-                // URLs de búsqueda en las tiendas
-                const searchUrl = Platform.OS === 'android'
-                  ? 'https://play.google.com/store/search?q=sem+estacionamiento+la+plata'
-                  : 'https://apps.apple.com/search?term=sem+estacionamiento';
-                
-                await Linking.openURL(searchUrl);
-              } catch (error) {
-                console.error('Error abriendo búsqueda en tienda:', error);
-                Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
-              }
-            },
-          },
-        ]
-      );
-    }
-  };
-
-  // ✅ Función actualizada con datos reales de SEM La Plata
-  const abrirAppSEMReal = async () => {
-    try {
-      let appUrl, storeUrl;
-
-      if (Platform.OS === 'android') {
-        // Package name real de SEM La Plata
-        const androidPackage = 'ar.edu.unlp.semmobile.laplata';
-        appUrl = `intent://launch#Intent;package=${androidPackage};end`;
-        storeUrl = `https://play.google.com/store/apps/details?id=${androidPackage}`;
-      } else {
-        // Para iOS - usar URL scheme genérico ya que no hay uno documentado
-        appUrl = 'semmobile://';
-        storeUrl = 'https://apps.apple.com/app/sem-mobile/id1387705895';
-      }
-
-      console.log('🚀 Intentando abrir SEM La Plata con:', appUrl);
-
-      // Verificar si la app está instalada
-      const canOpen = await Linking.canOpenURL(appUrl);
-      
-      if (canOpen) {
-        console.log('✅ App SEM La Plata encontrada, abriendo...');
-        await Linking.openURL(appUrl);
-      } else {
-        console.log('❌ App SEM La Plata no encontrada, redirigiendo a tienda...');
-        
-        Alert.alert(
-          'App SEM no encontrada',
-          'Para continuar necesitas la aplicación oficial SEM La Plata. ¿Deseas descargarla?',
-          [
-            {
-              text: 'Cancelar',
-              style: 'cancel',
-            },
-            {
-              text: 'Descargar',
-              onPress: async () => {
-                try {
-                  await Linking.openURL(storeUrl);
-                } catch (error) {
-                  console.error('Error abriendo tienda:', error);
-                  Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
-                }
-              },
-            },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error('Error abriendo app SEM:', error);
-      
-      // Fallback directo a la tienda
-      Alert.alert(
-        'Error',
-        'No se pudo verificar la aplicación. ¿Deseas ir directamente a la tienda?',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { 
-            text: 'Ir a tienda', 
-            onPress: () => Linking.openURL(fallbackUrl)
-          }
-        ]
-      );
-    }
-  };
-
-  // ✅ Función mejorada con múltiples intentos para mayor compatibilidad
-  const abrirAppSEMConFallbacks = async () => {
-    const intentos = [
-      {
-        nombre: 'SEM La Plata (oficial)',
-        android: 'intent://launch#Intent;package=ar.edu.unlp.semmobile.laplata;end',
-        ios: 'semmobile://',
-      },
-      {
-        nombre: 'SEM Mobile (genérico)',
-        android: 'intent://launch#Intent;package=ar.edu.unlp.sem;end',
-        ios: 'sem://',
-      },
-      {
-        nombre: 'Estacionamiento La Plata',
-        android: 'intent://launch#Intent;package=com.laplata.estacionamiento;end',
-        ios: 'estacionamiento://',
-      }
-    ];
-
-    let appAbierta = false;
-
-    for (const intento of intentos) {
-      try {
-        const url = Platform.OS === 'android' ? intento.android : intento.ios;
-        console.log(`🔍 Probando: ${intento.nombre} con ${url}`);
-        
-        const canOpen = await Linking.canOpenURL(url);
-        
-        if (canOpen) {
-          console.log(`✅ ${intento.nombre} encontrada, abriendo...`);
-          await Linking.openURL(url);
-          appAbierta = true;
-          break;
-        }
-      } catch (error) {
-        console.log(`❌ Error con ${intento.nombre}:`, error.message);
-        continue;
-      }
-    }
-
-    // Si ninguna app se pudo abrir
-    if (!appAbierta) {
-      console.log('❌ Ninguna app SEM encontrada');
-      
-      const storeUrl = Platform.OS === 'android'
-        ? 'https://play.google.com/store/apps/details?id=ar.edu.unlp.semmobile.laplata'
-        : 'https://apps.apple.com/app/sem-mobile/id1387705895';
-      
-      Alert.alert(
-        'Aplicación SEM requerida',
-        'Para iniciar el estacionamiento necesitas la app oficial SEM La Plata.',
-        [
-          {
-            text: 'Cancelar',
-            style: 'cancel',
-          },
-          {
-            text: 'Descargar App',
-            onPress: async () => {
-              try {
-                await Linking.openURL(storeUrl);
-              } catch (error) {
-                console.error('Error abriendo tienda:', error);
-                Alert.alert('Error', 'No se pudo abrir la tienda de aplicaciones');
-              }
-            },
-          },
-          {
-            text: 'Buscar manualmente',
-            onPress: async () => {
-              const searchUrl = Platform.OS === 'android'
-                ? 'https://play.google.com/store/search?q=sem+la+plata+estacionamiento'
-                : 'https://apps.apple.com/search?term=sem+la+plata';
-            
-              try {
-                await Linking.openURL(searchUrl);
-              } catch (error) {
-                console.error('Error abriendo búsqueda:', error);
-              }
-            },
-          }
-        ]
-      );
-    }
-  };
-
-  // ✅ Función mejorada para iniciar estacionamiento en el backend (ahora recibe vehiculoId)
+  // ✅ Función para iniciar estacionamiento en el backend (ahora recibe vehiculoId)
   const iniciarEstacionamientoBackend = async (vehiculoId) => {
     try {
       // Validaciones previas
@@ -690,6 +409,7 @@ export default function PayScreen({ navigation }) {
       
       if (response.data.status) {
         console.log('✅ Respuesta exitosa del backend:', response.data.message);
+        setEstacionamientoActivo(response.data.estacionamiento);
         return response.data.estacionamiento;
       } else {
         console.log('❌ Error en respuesta del backend:', response.data.message);
@@ -763,21 +483,7 @@ export default function PayScreen({ navigation }) {
   // ✅ Función PRINCIPAL MODIFICADA: Ahora abre el selector de vehículo
   const iniciarEstacionamientoYAbrirSEM = async () => {
     try {
-      // Paso 1: Verificar si ya hay un estacionamiento activo
-      const estacionamientoActivo = await verificarEstacionamientoActivo();
-      if (estacionamientoActivo) {
-        Alert.alert(
-          'Estacionamiento activo',
-          'Ya tienes un estacionamiento activo. ¿Quieres gestionarlo en la app SEM?',
-          [
-            { text: 'Abrir App SEM', onPress: abrirAppSEMRealMejorada },
-            { text: 'Cancelar', style: 'cancel' }
-          ]
-        );
-        return;
-      }
-
-      // Paso 2: Cargar vehículos del usuario
+      // Paso 1: Cargar vehículos del usuario
       const vehiculosDisponibles = await cargarVehiculos();
 
       if (vehiculosDisponibles === null) return; // Hubo un error al cargar
@@ -794,7 +500,7 @@ export default function PayScreen({ navigation }) {
         return;
       }
 
-      // Paso 3: Mostrar el modal para seleccionar el vehículo
+      // Paso 2: Mostrar el modal para seleccionar el vehículo
       setSelectorVehiculoVisible(true);
 
     } catch (error) {
@@ -817,9 +523,6 @@ export default function PayScreen({ navigation }) {
             hora_inicio: estacionamiento.hora_inicio,
             zona: estacionamiento.zona?.nombre || 'Zona no especificada'
           });
-          
-          // Opcional: Mostrar una notificación discreta en la UI
-          // Podrías agregar un estado para mostrar esto en el componente
         } else {
           console.log('ℹ️ No hay estacionamiento activo');
         }
@@ -933,20 +636,36 @@ export default function PayScreen({ navigation }) {
       </View>
 
       <View style={[tw`bg-white rounded-lg p-4 mt-4 shadow`]}>
+        {/* Cambiamos el título según si hay estacionamiento activo */}
         <View style={tw`flex-row items-center mb-1`}>
-          <Text style={tw`mr-2`}><Ionicons name="play-outline" size={24} color="blue" /></Text>
-          <Text style={tw`text-xl font-semibold`}>Iniciar Estacionamiento</Text>
+          <Text style={tw`mr-2`}>
+            <Ionicons 
+              name={estacionamientoActivo ? "stop-outline" : "play-outline"} 
+              size={24} 
+              color={estacionamientoActivo ? "red" : "blue"} 
+            />
+          </Text>
+          <Text style={tw`text-xl font-semibold`}>
+            {estacionamientoActivo ? 'Finalizar Estacionamiento' : 'Iniciar Estacionamiento'}
+          </Text>
         </View> 
         
         <View style={[tw`p-3 bg-blue-100 mt-2 rounded-lg`]}>
           <View style={tw`flex-row items-center justify-between`}>
-            <Text style={tw`text-lg font-semibold`}>Costo hora actual:</Text>
+            <Text style={tw`text-lg font-semibold`}>
+              {estacionamientoActivo ? 'Estacionamiento activo' : 'Costo hora actual'}:
+            </Text>
             <Text style={[tw`text-2xl font-semibold`, sharedStyles.textColorBlue]}>
-              {loadingTarifas ? 'Cargando...' : costoActual}
+              {loadingTarifas ? 'Cargando...' : 
+                estacionamientoActivo ? 
+                `$${estacionamientoActivo.monto_pagado || 0}` : 
+                costoActual}
             </Text>
           </View>
           <Text style={tw`text-gray-500 mt-2`}>
-            El costo final dependerá del tiempo real de estacionamiento
+            {estacionamientoActivo 
+              ? `Iniciado a las ${estacionamientoActivo.hora_inicio} en ${estacionamientoActivo.direccion}`
+              : 'El costo final dependerá del tiempo real de estacionamiento'}
           </Text>
         </View>
         
@@ -954,24 +673,45 @@ export default function PayScreen({ navigation }) {
           <TouchableOpacity 
             style={[
               tw`flex-row justify-center items-center mr-2 p-4 w-full rounded-lg`,
-              zonaDetectada && !zonaDetectada.es_prohibido_estacionar && estadoZona.color === 'red' 
-                ? sharedStyles.bgCustomGreen 
-                : tw`bg-gray-400`
+              // Si hay estacionamiento activo, usamos color rojo
+              estacionamientoActivo 
+                ? sharedStyles.bgCustomGreen
+                : (
+                  zonaDetectada && !zonaDetectada.es_prohibido_estacionar && estadoZona.color === 'red' 
+                    ? sharedStyles.bgCustomGreen 
+                    : tw`bg-gray-400`
+                )
             ]}
-            disabled={!zonaDetectada || zonaDetectada.es_prohibido_estacionar || estadoZona.color !== 'red'}
-            onPress={iniciarEstacionamientoYAbrirSEM}
+            disabled={
+              estacionamientoActivo 
+                ? false 
+                : !zonaDetectada || zonaDetectada.es_prohibido_estacionar || estadoZona.color !== 'red'
+            }
+            onPress={
+              estacionamientoActivo 
+                ? finalizarEstacionamientoBackend 
+                : iniciarEstacionamientoYAbrirSEM
+            }
           >
             <Text style={tw`text-white text-center mr-2`}>
-              <Ionicons name="open-outline" size={20} color="white" />
+              <Ionicons 
+                name={estacionamientoActivo ? "close-outline" : "open-outline"} 
+                size={20} 
+                color="white" 
+              />
             </Text>
             <Text style={tw`text-white text-lg text-center font-bold`}>
-              {!zonaDetectada 
-                ? 'Detectando zona...'
-                : zonaDetectada.es_prohibido_estacionar 
-                  ? 'Prohibido estacionar'
-                  : estadoZona.color === 'red'
-                    ? 'Abrir app SEM y Comenzar'
-                    : 'Estacionamiento gratuito'
+              {estacionamientoActivo 
+                ? 'Finalizar y Abrir SEM'
+                : (
+                  !zonaDetectada 
+                    ? 'Detectando zona...'
+                    : zonaDetectada.es_prohibido_estacionar 
+                      ? 'Prohibido estacionar'
+                      : estadoZona.color === 'red'
+                        ? 'Abrir app SEM y Comenzar'
+                        : 'Estacionamiento gratuito'
+                )
               }
             </Text>
           </TouchableOpacity>

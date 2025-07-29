@@ -26,7 +26,7 @@ export default function MainLayout({ navigation }) { // Recibe la prop navigatio
       case 'Map':
         return <MapScreen />;
       case 'Pay':
-        return <PayScreen />;
+        return <PayScreen navigation={navigation} />;
       case 'Car':
         return <CarScreen navigation={navigation} />;
       case 'Settings': // Pasa la prop de navegación a SettingsScreen
