@@ -84,36 +84,38 @@ export default function MapScreen({ navigation }) {
     });
   };
 
+  // Copia la función de ZonasMapView
+  const getColorFromHex = (hexColor, alpha = 0.3) => {
+    if (!hexColor) return `rgba(200,200,200,${alpha})`; // fallback gris
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
   const getZoneBackgroundColor = (zona) => {
     if (zona.es_prohibido_estacionar) {
-      return tw`bg-gray-300`;
+      return { backgroundColor: 'rgba(120,120,120,0.3)' }; // gris translúcido
     }
-    
-    // Usar el nombre de la zona como fallback principal
+    // Si tiene color_mapa, usarlo
+    if (zona.color_mapa) {
+      return { backgroundColor: getColorFromHex(zona.color_mapa, 0.3) };
+    }
+    // Fallbacks por nombre/tipo
     const nombreLower = zona.nombre.toLowerCase();
-    
-    if (nombreLower.includes('verde')) {
-      return tw`bg-green-100`;
-    } else if (nombreLower.includes('rosa')) {
-      return tw`bg-pink-100`;
-    } else if (nombreLower.includes('azul')) {
-      return tw`bg-blue-100`;
-    } else if (nombreLower.includes('amarilla')) {
-      return tw`bg-yellow-100`;
-    } else if (nombreLower.includes('prohibida')) {
-      return tw`bg-gray-300`;
+    if (nombreLower.includes('prohibida')) {
+      return { backgroundColor: 'rgba(120,120,120,0.3)' };
     }
-    
-    // Fallback basado en el tipo
     switch (zona.tipo) {
       case 'paga':
-        return tw`bg-green-100`;
+        return { backgroundColor: 'rgba(0,200,0,0.2)' };
       case 'libre':
-        return tw`bg-blue-100`;
+        return { backgroundColor: 'rgba(0,120,255,0.2)' };
       case 'prohibida':
-        return tw`bg-gray-300`;
+        return { backgroundColor: 'rgba(120,120,120,0.3)' };
       default:
-        return tw`bg-gray-100`;
+        return { backgroundColor: 'rgba(220,220,220,0.2)' };
     }
   };
 
@@ -248,7 +250,7 @@ export default function MapScreen({ navigation }) {
 
     if (zona.es_prohibido_estacionar) {
       return (
-        <View key={zona.id} style={tw`flex-row p-3 items-center rounded-lg w-full justify-center bg-gray-300 mb-1`}>
+        <View key={zona.id} style={tw`flex-row p-3 items-center rounded-lg w-full h-12 bg-gray-300 mb-1`}>
           <Text style={tw`text-gray-800 font-medium`}>Prohibido Estacionar</Text>
         </View>
       );
@@ -259,17 +261,17 @@ export default function MapScreen({ navigation }) {
     const horariosFormateados = formatearHorariosParaMostrar(zona.horarios_por_dia); // ✅ Usar horarios_por_dia
 
     return (
-      <View key={zona.id} style={[tw`flex-row p-2 pr-2 mb-1 items-center rounded-lg w-full justify-between`, bgColorStyle]}>
-        <Text style={[tw`font-semibold flex-1`, textColorStyle]}>{zona.nombre}</Text>
-        
-        <View style={tw`flex-col justify-center items-center mx-1`}>
-          <Text style={tw`text-gray-500 text-xs font-medium`}>{zona.tarifas_formateadas}</Text>
-          <Text style={tw`text-gray-500 text-xs`}>por hora</Text>
+      <View key={zona.id} style={[tw`flex-row p-2 h-12 pr-2 mb-1 items-center rounded-lg w-full`, bgColorStyle]}>
+        {/* Columna 1: Nombre */}
+        <View style={tw`flex-1 justify-center`}>
+          <Text style={[tw`font-semibold`, textColorStyle]}>{zona.nombre}</Text>
         </View>
-        
-        <View style={tw`flex-col justify-center items-end flex-1`}>
+        {/* Columna 2: Horarios, cada uno en una línea */}
+        <View style={tw`flex-1 justify-center pl-2`}>
           {horariosFormateados.map((horario, index) => (
-            <Text key={index} style={tw`text-gray-500 text-xs text-right`}>{horario}</Text>
+            <Text key={index} style={tw`text-gray-500 text-xs`}>
+              {horario}
+            </Text>
           ))}
         </View>
       </View>
@@ -325,6 +327,9 @@ export default function MapScreen({ navigation }) {
             {loadingZonas && (
               <ActivityIndicator size="small" color="#3236FF" />
             )}
+            <Text style={tw`text-gray-600 text-sm`}>
+              Tarifas: {zonasLeyenda[0]?.tarifas_formateadas}
+            </Text>
           </View>
           
           <View style={tw`flex-col items-center mt-2`}>
@@ -348,15 +353,6 @@ export default function MapScreen({ navigation }) {
               </View>
             )}
             
-            {/* Botón para recargar zonas */}
-            {!loadingZonas && zonasLeyenda.length > 0 && (
-              <TouchableOpacity
-                onPress={cargarZonasLeyenda}
-                style={tw`mt-2 p-2 bg-blue-100 rounded-lg`}
-              >
-                <Text style={[tw`text-sm`, sharedStyles.textColorBlue]}>Actualizar zonas</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
       </View>

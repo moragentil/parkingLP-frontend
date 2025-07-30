@@ -5,19 +5,31 @@ const sharedStyles = StyleSheet.create({
     backgroundColor: '#3236FF',
   },
   bgCustomGreen: {
-    backgroundColor: '#16A34A',
+    backgroundColor: '#1fb10b',
   },
   bgCustomGray: {
     backgroundColor: '#E2E2E2',
   },
   bgCustomPink: {
-    backgroundColor: '#feccef',
+    backgroundColor: '#d9277c',
   },
   bgCustomBlueLight: {
-    backgroundColor: '#c5d9fe',
+    backgroundColor: '#009cd3',
   },
   bgCustomYellow: {
-    backgroundColor: '#fefebf',
+    backgroundColor: '#e7e00d',
+  },
+  bgCustomGreenLight: {
+    backgroundColor: '#1fb10b',
+  },
+  bgCustomPinkLight: {
+    backgroundColor: '#d9277c',
+  },
+  bgCustomBlueLightBack: {
+    backgroundColor: '#009cd3',
+  },
+  bgCustomYellowLight: {
+    backgroundColor: '#FFFB8C',
   },
   borderColorBlue: {
     borderColor: '#3236FF',
