@@ -307,7 +307,7 @@ const [manualAddress, setManualAddress] = useState('');
               </View>
             </View>
           </View>
-          <View style={[tw`bg-white rounded-t-lg p-4 mt-4 shadow `]}>
+          <View style={[tw`bg-white rounded-t-lg px-4 py-3 mt-4 shadow `]}>
             <View style={tw`flex-row items-center `}>
               <Text><Ionicons name="navigate-outline" size={24} style={[tw``, sharedStyles.textColorBlue]}/></Text>
               <Text style={tw`text-xl ml-2 font-semibold text-gray-800`}>Encontrá tu auto estacionado</Text>
@@ -382,14 +382,12 @@ const [manualAddress, setManualAddress] = useState('');
               <View style={tw`flex-row mt-2 justify-between items-center`}>
                 {/* Nombre de la zona a la izquierda */}
                 <View style={tw`flex-row items-center`}>
-                  <Text style={[tw`text-green-700 text-sm`]}>Zona:</Text>
                   <Text style={[tw`text-green-700 text-sm font-bold ml-1`]}>
                     {estacionamientoActivo.zona?.nombre || 'No definida'}
                   </Text>
                 </View>
                 {/* Tiempo estacionado a la derecha */}
                 <View>
-                  <Text style={[tw`text-green-700 text-sm`]}>Tiempo:</Text>
                   <Text style={[tw`text-green-700 text-sm font-bold ml-1`]}>
                     {estacionamientoActivo.hora_inicio
                       ? calcularTiempoTranscurrido(estacionamientoActivo.hora_inicio)
