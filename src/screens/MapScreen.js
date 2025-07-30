@@ -94,6 +94,15 @@ export default function MapScreen({ navigation }) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   };
 
+  const getStrokeColorFromHex = (hexColor) => {
+    if (!hexColor) return 'rgb(80,80,80)';
+    const hex = hexColor.replace('#', '');
+    const r = Math.max(0, parseInt(hex.substr(0, 2), 16) - 40);
+    const g = Math.max(0, parseInt(hex.substr(2, 2), 16) - 40);
+    const b = Math.max(0, parseInt(hex.substr(4, 2), 16) - 40);
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
   const getZoneBackgroundColor = (zona) => {
     if (zona.es_prohibido_estacionar) {
       return { backgroundColor: 'rgba(120,120,120,0.3)' }; // gris translúcido
@@ -121,12 +130,17 @@ export default function MapScreen({ navigation }) {
 
   const getZoneTextColor = (zona) => {
     if (zona.es_prohibido_estacionar) {
-      return tw`text-gray-800`;
+      return { color: 'rgb(80,80,80)' };
     }
-    
+
+    // Si tiene color_mapa, usar el color del borde del polígono
+    if (zona.color_mapa) {
+      return { color: getStrokeColorFromHex(zona.color_mapa) };
+    }
+
     // Usar el nombre de la zona como referencia principal
     const nombreLower = zona.nombre.toLowerCase();
-    
+
     if (nombreLower.includes('verde')) {
       return tw`text-green-700`;
     } else if (nombreLower.includes('rosa')) {
@@ -138,7 +152,7 @@ export default function MapScreen({ navigation }) {
     } else if (nombreLower.includes('prohibida')) {
       return tw`text-gray-800`;
     }
-    
+
     // Fallback basado en el tipo
     switch (zona.tipo) {
       case 'paga':
