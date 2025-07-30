@@ -6,6 +6,8 @@ import tw from '../utils/tailwind';
 import sharedStyles from '../utils/sharedStyles';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import api from '../services/api'; // Asegúrate de importar tu servicio de API
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 export default function CarScreen({ navigation }) {
   const [userLocation, setUserLocation] = useState(null);
@@ -26,7 +28,9 @@ export default function CarScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [nuevaPatente, setNuevaPatente] = useState('');
   const [agregandoVehiculo, setAgregandoVehiculo] = useState(false);
-
+  const [manualLocation, setManualLocation] = useState(null);
+const [manualAddress, setManualAddress] = useState('');
+  const [manual, setManual] = useState(false);
   // ✅ useEffect para la carga inicial de datos (se ejecuta solo una vez)
   useEffect(() => {
     const inicializarPantalla = async () => {
@@ -72,6 +76,13 @@ export default function CarScreen({ navigation }) {
           latitudeDelta: 0.005,
           longitudeDelta: 0.005,
         });
+        const ubicacionManual = await AsyncStorage.getItem('ubicacionManual');
+        const direccionManual = await AsyncStorage.getItem('direccionManual');
+        if (ubicacionManual && direccionManual) { 
+        setManualLocation(ubicacionManual);
+        setManualAddress(direccionManual);
+        setManual(true);
+        }
       } else {
         setEstacionamientoActivo(null);
       }

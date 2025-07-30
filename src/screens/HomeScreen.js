@@ -44,6 +44,34 @@ export default function HomeScreen({ navigation }) {
     }
   }, [location, zonas]);
 
+  useEffect(() => {
+    const cargarUbicacionManual = async () => {
+      const ubicacionManual = await AsyncStorage.getItem('ubicacionManual');
+      console.log('Cargando ubicación manual desde AsyncStorage:', ubicacionManual);
+      const direccionManual = await AsyncStorage.getItem('direccionManual');
+      console.log('Cargando dirección manual desde AsyncStorage:', direccionManual);
+      if (ubicacionManual) {
+        const coords = JSON.parse(ubicacionManual);
+        setLocation(coords);
+        setAddress(direccionManual || 'Ubicación seleccionada');
+        console.log('Ubicación manual cargada:', coords);
+        setUbicacionManual(true);
+        setMapRegion({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      } else {
+        setUbicacionManual(false);
+        getCurrentLocation();
+      }
+      cargarZonasParaMapa();
+      verificarEstacionamientoActivo();
+    };
+    cargarUbicacionManual();
+  }, []);
+
   const getCurrentLocation = async () => {
     try {
       setLoadingUbicacion(true);
@@ -85,6 +113,10 @@ export default function HomeScreen({ navigation }) {
 
       obtenerDireccion(latitude, longitude);
 
+      // Limpiar ubicación manual en AsyncStorage
+      await AsyncStorage.removeItem('ubicacionManual');
+      await AsyncStorage.removeItem('direccionManual');
+
     } catch (error) {
       console.error('Error obteniendo ubicación:', error);
       Alert.alert('Error', 'No se pudo obtener la ubicación');
@@ -105,6 +137,7 @@ export default function HomeScreen({ navigation }) {
       if (reverseGeocode.length > 0) {
         const addr = reverseGeocode[0];
         const addressString = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.city || ''}`;
+        console.log('Dirección obtenida:', addressString);
         setAddress(addressString);
       } else {
         setAddress('Ubicación seleccionada');
@@ -144,10 +177,9 @@ export default function HomeScreen({ navigation }) {
    const handleManualLocationSelect = async (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLocation({ latitude, longitude });
-    obtenerDireccion(latitude, longitude);
     setUbicacionManual(true);
     setShowMapModal(false);
-    
+
     setMapRegion({
       latitude,
       longitude,
@@ -155,9 +187,22 @@ export default function HomeScreen({ navigation }) {
       longitudeDelta: 0.01,
     });
 
-    // Guardar en AsyncStorage
-    await AsyncStorage.setItem('ubicacionManual', JSON.stringify({ latitude, longitude }));
-    await AsyncStorage.setItem('direccionManual', address); // address es el string de dirección mostrado en HomeScreen
+    // Obtener la dirección y guardar en AsyncStorage
+    try {
+      let reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+      let addressString = 'Ubicación seleccionada';
+      if (reverseGeocode.length > 0) {
+        const addr = reverseGeocode[0];
+        addressString = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.city || ''}`;
+      }
+      setAddress(addressString);
+      await AsyncStorage.setItem('ubicacionManual', JSON.stringify({ latitude, longitude }));
+      await AsyncStorage.setItem('direccionManual', addressString);
+      console.log('Address guardada en AsyncStorage:', addressString);
+    } catch (error) {
+      setAddress('Ubicación seleccionada');
+      await AsyncStorage.setItem('direccionManual', 'Ubicación seleccionada');
+    }
   };
 
     const openManualLocationPicker = () => {
