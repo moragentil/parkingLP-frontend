@@ -8,6 +8,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import ZonasMapView from '../components/ZonasMapView';
 import { useZonas } from '../hooks/useZonas';
+import api from '../services/api';
+
 
 export default function HomeScreen({ navigation }) {
   const [location, setLocation] = useState(null);
@@ -20,12 +22,14 @@ export default function HomeScreen({ navigation }) {
     latitudeDelta: 0.01,
     longitudeDelta: 0.01,
   });
+  const [estacionamientoActivo, setEstacionamientoActivo] = useState(null);
 
   const { zonas, loading: loadingZonas, cargarZonasParaMapa, buscarZonaPorUbicacion } = useZonas();
 
   useEffect(() => {
     getCurrentLocation();
     cargarZonasParaMapa();
+    verificarEstacionamientoActivo();
   }, []);
 
   useEffect(() => {
@@ -262,6 +266,29 @@ export default function HomeScreen({ navigation }) {
   const horarios = formatearHorariosZona(zonaDetectada);
   const estadoZona = obtenerEstadoZona(zonaDetectada);
 
+  const verificarEstacionamientoActivo = async () => {
+      try {
+        const response = await api.get('/estacionamiento-activo');
+        
+        // El backend devuelve status:true si hay uno activo
+        if (response.data.status && response.data.estacionamiento) {
+          setEstacionamientoActivo(response.data.estacionamiento);
+          return response.data.estacionamiento;
+        }
+        
+        // Si no, devuelve null
+        setEstacionamientoActivo(null);
+        return null;
+      } catch (error) {
+        // No es un error crítico si la respuesta es 404 (no encontrado)
+        if (error.response?.status !== 404) {
+          console.error('Error verificando estacionamiento activo:', error);
+        }
+        setEstacionamientoActivo(null);
+        return null;
+      }
+    };
+
   return (
     <View style={tw`flex-1 m-4 bg-gray-200`} >
       {/* Mapa interactivo con zonas */}
@@ -406,12 +433,21 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       {/* Estado del estacionamiento */}
-      <View style={tw`bg-gray-300 border border-gray-400 flex-row justify-center items-center rounded-lg p-2 mt-4 shadow`}>
-        <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800`} />
-        <Text style={tw`ml-1 text-gray-800 text-base font-semibold`}>Sin estacionamiento activo</Text>
+      <View
+        style={[
+          tw`flex-row justify-center items-center rounded-lg p-2 mt-4 shadow ${estacionamientoActivo ? 'border border-red-500' : 'border border-gray-400'}`,
+          estacionamientoActivo ? tw`bg-red-200` : tw`bg-gray-300`
+        ]}
+      >
+        <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800 ${estacionamientoActivo ? 'text-red-600' : 'text-gray-600'}`} />
+        <Text style={tw`ml-1 text-gray-800 text-base font-semibold ${estacionamientoActivo ? 'text-red-600' : 'text-gray-600'}`}>
+          {estacionamientoActivo ? `Estacionamiento activo:` : 'Sin estacionamiento activo'}
+        </Text>
       </View>
 
+
       {/* Botones */}
+      { !estacionamientoActivo && (
       <View style={tw`flex-row justify-between mr-2 mt-4`}>
         <TouchableOpacity 
           style={[tw`mr-2 p-4 w-1/2 rounded-lg`, sharedStyles.bgCustomBlue]}
@@ -426,6 +462,17 @@ export default function HomeScreen({ navigation }) {
           <Text style={tw`text-white text-center font-bold`}>Zona Límite</Text>
         </TouchableOpacity>
       </View>
+      )}
+      {estacionamientoActivo && (
+        <View style={tw`flex-row w-full mt-4`}>
+          <TouchableOpacity 
+            style={[tw` w-full p-4 rounded-lg bg-red-500`]}
+            onPress={() => navigation.navigate('Pay')}
+          >
+            <Text style={tw`text-white text-center font-bold`}>Finalizar Estacionamiento</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
