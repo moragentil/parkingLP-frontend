@@ -260,10 +260,10 @@ export default function HomeScreen({ navigation }) {
 
     if (zona.es_prohibido_estacionar) {
       return {
-        borderStyle: { borderLeftColor: 'rgb(239, 68, 68)' }, // red-500
-        iconColor: 'rgb(239, 68, 68)', // red-500
-        bgStyle: { backgroundColor: hexToRgba('#EF4444', 0.1) }, // red-500
-        textStyle: { color: 'rgb(153, 27, 27)' }, // red-800
+        borderStyle: { borderLeftColor: 'rgb(255, 0, 0)' }, // red-500
+        iconColor: 'rgb(255, 0, 0)', // red-500
+        bgStyle: { backgroundColor: hexToRgba('#FF0000', 0.1) }, // red-500
+        textStyle: { color: 'rgb(255, 0, 0)' }, // red-800
         colorName: 'Prohibido'
       };
     }
@@ -587,7 +587,7 @@ export default function HomeScreen({ navigation }) {
           </>
         ) : zonaDetectada && zonaDetectada.es_prohibido_estacionar ? (
           <View style={tw`flex-row items-center w-full mt-2 justify-center`}>
-            <Text style={tw`text-sm mx-4 mt-2 font-medium p-1 px-4 rounded-full bg-red-100 text-red-600`}>
+            <Text style={tw`text-sm mx-4 mt-2 font-medium p-1 px-4 rounded-full bg-red-100 text-red-500`}>
               Prohibido estacionar en esta zona
             </Text>
           </View>
