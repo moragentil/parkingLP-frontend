@@ -273,7 +273,7 @@ export default function SettingsScreen({ navigation }) {
         </View>
 
         {/* Sección de Configuración de la App */}
-        <View style={tw`bg-white p-4 rounded-lg shadow mb-4`}>
+        <View style={tw`bg-white p-4 rounded-lg shadow `}>
           <Text style={tw`text-xl font-bold mb-4 text-gray-800`}>Configuración</Text>
           
           <View style={tw`flex-row justify-between items-center mb-4`}>
@@ -294,17 +294,6 @@ export default function SettingsScreen({ navigation }) {
             <Text style={tw`ml-4 text-lg`}>Cambiar Contraseña</Text>
             <Ionicons name="chevron-forward-outline" size={20} color="gray" style={tw`ml-auto`} />
           </TouchableOpacity>
-        </View>
-
-        {/* Sección de Vehículo */}
-        <View style={tw`bg-white p-4 rounded-lg shadow mb-4`}>
-          <Text style={tw`text-xl font-bold mb-4 text-gray-800`}>Mi Vehículo</Text>
-          <View style={tw`flex-row justify-between items-center`}>
-              <Text style={tw`text-lg`}>Patente: AA 123 BB</Text>
-              <TouchableOpacity>
-                  <Text style={[tw`font-semibold`, sharedStyles.textColorBlue]}>Cambiar</Text>
-              </TouchableOpacity>
-          </View>
         </View>
 
         {/* Botón de Cerrar Sesión */}
