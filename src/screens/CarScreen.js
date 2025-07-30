@@ -53,6 +53,7 @@ const [manualAddress, setManualAddress] = useState('');
 
     // Actualizar el tiempo inmediatamente al cambiar el estado
     setTiempoTranscurrido(calcularTiempoTranscurrido(estacionamientoActivo.hora_inicio));
+    console.log('Tiempo transcurrido actualizado:', tiempoTranscurrido);
 
     // Intervalo para actualizar el tiempo transcurrido cada minuto
     const intervalId = setInterval(() => {
@@ -165,24 +166,23 @@ const [manualAddress, setManualAddress] = useState('');
   };
 
   const calcularTiempoTranscurrido = (horaInicio) => {
-    if (!horaInicio) return '';
-    
-    const [horas, minutos, segundos] = horaInicio.split(':').map(Number);
-    const fechaInicio = new Date();
-    fechaInicio.setHours(horas, minutos, segundos, 0);
+  if (!horaInicio) return '--';
 
-    const ahora = new Date();
-    let diffMs = ahora - fechaInicio;
-    if (diffMs < 0) diffMs = 0;
+  // Si viene en formato ISO (fecha y hora), úsalo directamente
+  const inicio = new Date(horaInicio);
+  const ahora = new Date();
 
-    const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  let diffMs = ahora - inicio;
+  if (diffMs < 0) diffMs = 0;
 
-    if (diffHoras > 0) {
-      return `${diffHoras}h ${diffMins}min`;
-    }
-    return `${diffMins} min`;
-  };
+  const diffHoras = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (diffHoras > 0) {
+    return `${diffHoras}h ${diffMins}min`;
+  }
+  return `${diffMins} min`;
+};
 
   const handleAgregarVehiculo = async () => {
     if (!nuevaPatente.trim()) {
