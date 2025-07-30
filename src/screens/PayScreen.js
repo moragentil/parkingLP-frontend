@@ -408,13 +408,15 @@ export default function PayScreen({ navigation }) {
       }
 
       console.log('🚗 Iniciando proceso de estacionamiento...');
+      console.log('Zona detectada', zonaDetectada);
       
       // Preparar datos para el backend
       const datosEstacionamiento = {
         vehiculo_id: vehiculoId,
         latitud: location.latitude,
         longitud: location.longitude,
-        direccion: address || 'Dirección no disponible'
+        direccion: address || 'Dirección no disponible',
+        zona_id: zonaDetectada.id // ← Agrega el id de la zona detectada
       };
 
       console.log('📡 Enviando datos de estacionamiento:', datosEstacionamiento);

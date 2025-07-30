@@ -377,11 +377,25 @@ const [manualAddress, setManualAddress] = useState('');
             </TouchableOpacity>
           </View>
           <View style={[tw`bg-green-100 rounded-lg px-3 py-2 mt-4 shadow`, sharedStyles.borderColorBlue]}>
-            <View style={tw`flex-col `}>
+            <View style={tw`flex-col`}>
               <Text style={[tw`font-semibold text-green-700 text-base`]}>Estado del estacionamiento</Text>
               <View style={tw`flex-row mt-2 justify-between items-center`}>
-                <Text style={[tw`text-green-700 text-sm`]}>Zona:</Text>
-                <Text style={[tw`text-green-700 text-sm font-bold`]}>{estacionamientoActivo.zona?.nombre || 'No definida'}</Text>
+                {/* Nombre de la zona a la izquierda */}
+                <View style={tw`flex-row items-center`}>
+                  <Text style={[tw`text-green-700 text-sm`]}>Zona:</Text>
+                  <Text style={[tw`text-green-700 text-sm font-bold ml-1`]}>
+                    {estacionamientoActivo.zona?.nombre || 'No definida'}
+                  </Text>
+                </View>
+                {/* Tiempo estacionado a la derecha */}
+                <View>
+                  <Text style={[tw`text-green-700 text-sm`]}>Tiempo:</Text>
+                  <Text style={[tw`text-green-700 text-sm font-bold ml-1`]}>
+                    {estacionamientoActivo.hora_inicio
+                      ? calcularTiempoTranscurrido(estacionamientoActivo.hora_inicio)
+                      : '--'}
+                  </Text>
+                </View>
               </View>
             </View>
           </View>
