@@ -76,6 +76,7 @@ const [manualAddress, setManualAddress] = useState('');
           latitudeDelta: 0.005,
           longitudeDelta: 0.005,
         });
+        console.log('Estacionamiento activo encontrado:', estacionamiento);
         const ubicacionManual = await AsyncStorage.getItem('ubicacionManual');
         const direccionManual = await AsyncStorage.getItem('direccionManual');
         if (ubicacionManual && direccionManual) { 
@@ -237,11 +238,11 @@ const [manualAddress, setManualAddress] = useState('');
             onPress={() => setSelectorVisible(true)}
             style={[tw`rounded-lg p-3 flex-row items-center justify-center flex-1 mr-1 bg-white w-1/2`]}
           >
-            <Ionicons name="car-sport-outline" size={18} color="#3730a3" />
-            <Text style={tw`text-indigo-800 text-center ml-2 font-semibold text-sm`} numberOfLines={1}>
+            <Ionicons name="car-sport-outline" size={18} color="#3236FF" />
+            <Text style={[tw` text-center ml-2 font-semibold text-sm`, sharedStyles.textColorBlue]} numberOfLines={1}>
               {vehiculoSeleccionado ? vehiculoSeleccionado.patente : 'Seleccionar'}
             </Text>
-            <Ionicons name="chevron-down-outline" size={18} color="#3730a3" style={tw`ml-auto`} />
+            <Ionicons name="chevron-down-outline" size={18} color="#3236FF" style={tw`ml-auto`} />
           </TouchableOpacity>
         )}
         {/* ✅ Botón modificado para abrir el modal */}
@@ -287,7 +288,14 @@ const [manualAddress, setManualAddress] = useState('');
                 <View style={tw`flex-row items-center mb-2`}>
                   <View>
                     <Text style={tw`text-gray-500`}>Estacionado</Text>
-                    <Text style={[tw`text-blue-600 font-semibold`]}>{estacionamientoActivo.hora_inicio.substring(0, 5)}</Text>
+                    <Text style={[tw`text-blue-600 font-semibold`]}>
+                      {estacionamientoActivo.hora_inicio
+                        ? new Date(estacionamientoActivo.hora_inicio).toLocaleTimeString('es-AR', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : ''}
+                    </Text>
                   </View>
                 </View>
                 <View style={tw`flex-row items-center`}>
