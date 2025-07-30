@@ -146,13 +146,13 @@ export default function ZonasMapView({
           longitude: punto.lng,
         }));
 
-        const fillColor = zona.es_prohibido_estacionar 
-          ? 'rgba(220, 38, 127, 0.3)' // Rosa/rojo para prohibido
-          : getColorFromHex(zona.color_mapa, 0.3);
+      const fillColor = zona.es_prohibido_estacionar 
+        ? 'rgba(0, 0, 0, 0.3)' // Negro con transparencia para prohibido
+        : getColorFromHex(zona.color_mapa, 0.3);
 
-        const strokeColor = zona.es_prohibido_estacionar
-          ? 'rgb(180, 20, 100)'
-          : getStrokeColorFromHex(zona.color_mapa);
+      const strokeColor = zona.es_prohibido_estacionar
+        ? 'rgb(0, 0, 0)' // Negro para el borde
+        : getStrokeColorFromHex(zona.color_mapa);
 
         return (
           <Polygon
