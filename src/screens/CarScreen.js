@@ -431,7 +431,7 @@ const [manualAddress, setManualAddress] = useState('');
               onPress={() => setSelectorVisible(false)}
               style={tw`py-3 mt-4`}
             >
-              <Text style={tw`text-gray-600 text-center font-bold`}>Cerrar</Text>
+              <Text style={tw`text-gray-600 text-center`}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -448,7 +448,7 @@ const [manualAddress, setManualAddress] = useState('');
           <View style={tw`bg-white rounded-lg p-6 w-11/12`}>
             <Text style={tw`text-xl font-bold mb-4`}>Agregar Nuevo Vehículo</Text>
             <TextInput
-              style={tw`border border-gray-300 rounded-lg p-3 mb-4 text-lg text-center`}
+              style={tw`border border-gray-300 rounded-lg px-3 py-1 mb-4 text-lg text-center`}
               placeholder="AA 123 BB"
               value={nuevaPatente}
               onChangeText={setNuevaPatente}
