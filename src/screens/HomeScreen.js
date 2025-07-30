@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Modal } from 'react-native';
 import * as Location from 'expo-location';
 import tw from '../utils/tailwind';
 import sharedStyles from '../utils/sharedStyles';
@@ -9,6 +9,7 @@ import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import ZonasMapView from '../components/ZonasMapView';
 import { useZonas } from '../hooks/useZonas';
 import api from '../services/api';
+import MapView, { Marker } from 'react-native-maps';
 
 
 export default function HomeScreen({ navigation }) {
@@ -23,6 +24,9 @@ export default function HomeScreen({ navigation }) {
     longitudeDelta: 0.01,
   });
   const [estacionamientoActivo, setEstacionamientoActivo] = useState(null);
+  const [ubicacionManual, setUbicacionManual] = useState(false);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapModalRegion, setMapModalRegion] = useState(null);
 
   const { zonas, loading: loadingZonas, cargarZonasParaMapa, buscarZonaPorUbicacion } = useZonas();
 
@@ -42,6 +46,7 @@ export default function HomeScreen({ navigation }) {
   const getCurrentLocation = async () => {
     try {
       setLoadingUbicacion(true);
+      setUbicacionManual(false);
       
       // Pedir permisos de ubicación
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -66,6 +71,31 @@ export default function HomeScreen({ navigation }) {
       });
 
       // Obtener dirección a partir de coordenadas
+/*       let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude,
+      });
+
+      if (reverseGeocode.length > 0) {
+        const addr = reverseGeocode[0];
+        const addressString = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.city || ''}`;
+        setAddress(addressString);
+      } */
+
+      obtenerDireccion(latitude, longitude);
+
+    } catch (error) {
+      console.error('Error obteniendo ubicación:', error);
+      Alert.alert('Error', 'No se pudo obtener la ubicación');
+      setAddress('No se pudo obtener la ubicación');
+      setUbicacionManual(false);
+    } finally {
+      setLoadingUbicacion(false);
+    }
+  };
+
+   const obtenerDireccion = async (latitude, longitude) => {
+    try {
       let reverseGeocode = await Location.reverseGeocodeAsync({
         latitude,
         longitude,
@@ -75,16 +105,15 @@ export default function HomeScreen({ navigation }) {
         const addr = reverseGeocode[0];
         const addressString = `${addr.street || ''} ${addr.streetNumber || ''}, ${addr.city || ''}`;
         setAddress(addressString);
+      } else {
+        setAddress('Ubicación seleccionada');
       }
-
     } catch (error) {
-      console.error('Error obteniendo ubicación:', error);
-      Alert.alert('Error', 'No se pudo obtener la ubicación');
-      setAddress('No se pudo obtener la ubicación');
-    } finally {
-      setLoadingUbicacion(false);
+      console.error('Error obteniendo dirección:', error);
+      setAddress('Ubicación seleccionada');
     }
   };
+
 
   const detectarZona = () => {
     if (!location) return;
@@ -109,6 +138,27 @@ export default function HomeScreen({ navigation }) {
       latitude,
       longitude,
     });
+  };
+
+   const handleManualLocationSelect = (event) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setLocation({ latitude, longitude });
+    obtenerDireccion(latitude, longitude);
+    setUbicacionManual(true);
+    setShowMapModal(false);
+    
+    // Actualizar región del mapa principal
+    setMapRegion({
+      latitude,
+      longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+  };
+
+    const openManualLocationPicker = () => {
+    setMapModalRegion(mapRegion);
+    setShowMapModal(true);
   };
 
   // Función para convertir hex a rgba con transparencia
@@ -297,7 +347,7 @@ export default function HomeScreen({ navigation }) {
           <ZonasMapView
             style={tw`flex-1`}
             initialRegion={mapRegion}
-            showUserLocation={true}
+            showUserLocation={!ubicacionManual}
             onMapPress={onMapPress}
             zonas={zonas} // ✅ Pasar las zonas como prop
             loading={loadingZonas} // ✅ Pasar el estado de carga
@@ -329,6 +379,16 @@ export default function HomeScreen({ navigation }) {
                 )}
               </TouchableOpacity>
             </View>
+                        {/* Marcador para ubicación manual */}
+            {ubicacionManual && location && (
+              <Marker
+                coordinate={{
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                }}
+                pinColor="blue"
+              />
+            )}
           </ZonasMapView>
         </View>
       </View>
@@ -346,10 +406,69 @@ export default function HomeScreen({ navigation }) {
         <View style={tw`flex-row items-center mx-2`}>
           <Text style={tw`text-gray-500`}>
             {loadingUbicacion ? 'Detectando ubicación...' : 
-             location ? 'Detectado automáticamente' : 'Ubicación no disponible'}
+             location ? (ubicacionManual ? 'Seleccionada manualmente' : 'Detectado automáticamente') : 'Ubicación no disponible'}
           </Text>
         </View>
+        {/* Botón para selección manual cuando falla la detección automática */}
+        {!location && !loadingUbicacion && (
+          <TouchableOpacity
+            style={[tw`mt-2 p-2 rounded-lg flex-row items-center justify-center`, sharedStyles.bgCustomBlue]}
+            onPress={openManualLocationPicker}
+          >
+            <Ionicons name="map-outline" size={18} color="white" />
+            <Text style={tw`text-white ml-2`}>Seleccionar ubicación manualmente</Text>
+          </TouchableOpacity>
+        )}
       </View>
+
+            {/* Modal para selección manual de ubicación */}
+      <Modal
+        visible={showMapModal}
+        animationType="slide"
+        transparent={false}
+      >
+        <View style={tw`flex-1`}>
+          <View style={tw`h-12 bg-blue-500 flex-row items-center px-4`}>
+            <TouchableOpacity onPress={() => setShowMapModal(false)}>
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={tw`text-white text-lg font-bold ml-4`}>Seleccione su ubicación</Text>
+          </View>
+          
+          <View style={tw`flex-1`}>
+            <ZonasMapView
+              style={tw`flex-1`}
+              initialRegion={mapModalRegion || mapRegion}
+              showUserLocation={false}
+              onMapPress={handleManualLocationSelect}
+              zonas={zonas}
+              loading={loadingZonas}
+            >
+              {location && (
+                <Marker
+                  coordinate={{
+                    latitude: location.latitude,
+                    longitude: location.longitude,
+                  }}
+                  pinColor="blue"
+                />
+              )}
+            </ZonasMapView>
+          </View>
+          
+          <View style={tw`p-4 bg-white`}>
+            <Text style={tw`text-center text-gray-600 mb-2`}>
+              Toque en el mapa para seleccionar su ubicación
+            </Text>
+            <TouchableOpacity
+              style={[tw`p-3 rounded-lg`, sharedStyles.bgCustomBlue]}
+              onPress={() => setShowMapModal(false)}
+            >
+              <Text style={tw`text-white text-center font-bold`}>Confirmar ubicación</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Zona detectada - Dinámico con colores del backend */}
       <View style={[
