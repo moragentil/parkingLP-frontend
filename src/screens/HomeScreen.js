@@ -10,6 +10,7 @@ import ZonasMapView from '../components/ZonasMapView';
 import { useZonas } from '../hooks/useZonas';
 import api from '../services/api';
 import MapView, { Marker } from 'react-native-maps';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 export default function HomeScreen({ navigation }) {
@@ -140,20 +141,22 @@ export default function HomeScreen({ navigation }) {
     });
   };
 
-   const handleManualLocationSelect = (event) => {
+   const handleManualLocationSelect = async (event) => {
     const { latitude, longitude } = event.nativeEvent.coordinate;
     setLocation({ latitude, longitude });
     obtenerDireccion(latitude, longitude);
     setUbicacionManual(true);
     setShowMapModal(false);
     
-    // Actualizar región del mapa principal
     setMapRegion({
       latitude,
       longitude,
       latitudeDelta: 0.01,
       longitudeDelta: 0.01,
     });
+
+    // Guardar en AsyncStorage
+    await AsyncStorage.setItem('ubicacionManual', JSON.stringify({ latitude, longitude }));
   };
 
     const openManualLocationPicker = () => {

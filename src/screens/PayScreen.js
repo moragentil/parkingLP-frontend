@@ -137,10 +137,23 @@ export default function PayScreen({ navigation }) {
   };
 
   useEffect(() => {
-    getCurrentLocation();
+    const cargarUbicacionManual = async () => {
+      const ubicacionManual = await AsyncStorage.getItem('ubicacionManual');
+      if (ubicacionManual) {
+        const coords = JSON.parse(ubicacionManual);
+        setLocation(coords);
+        // Detectar zona con esos coords
+        const zona = buscarZonaPorUbicacion(coords.latitude, coords.longitude);
+        setZonaDetectada(zona);
+        // Puedes obtener la dirección también si lo necesitas
+      } else {
+        getCurrentLocation();
+      }
+    };
+    cargarUbicacionManual();
     cargarZonasParaMapa();
     cargarTarifasHorarias();
-    verificarEstacionamientoActivo(); // Verificar estacionamiento activo al cargar
+    verificarEstacionamientoActivo();
   }, []);
 
   useEffect(() => {
