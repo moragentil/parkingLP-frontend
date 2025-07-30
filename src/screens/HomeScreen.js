@@ -157,6 +157,7 @@ export default function HomeScreen({ navigation }) {
 
     // Guardar en AsyncStorage
     await AsyncStorage.setItem('ubicacionManual', JSON.stringify({ latitude, longitude }));
+    await AsyncStorage.setItem('direccionManual', address); // address es el string de dirección mostrado en HomeScreen
   };
 
     const openManualLocationPicker = () => {

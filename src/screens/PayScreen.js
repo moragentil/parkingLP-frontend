@@ -139,13 +139,15 @@ export default function PayScreen({ navigation }) {
   useEffect(() => {
     const cargarUbicacionManual = async () => {
       const ubicacionManual = await AsyncStorage.getItem('ubicacionManual');
+      const direccionManual = await AsyncStorage.getItem('direccionManual');
       if (ubicacionManual) {
         const coords = JSON.parse(ubicacionManual);
         setLocation(coords);
+        setLoadingUbicacion(false);
+        setAddress(direccionManual || 'Dirección no disponible'); // <--- Aquí se muestra la misma dirección
         // Detectar zona con esos coords
         const zona = buscarZonaPorUbicacion(coords.latitude, coords.longitude);
         setZonaDetectada(zona);
-        // Puedes obtener la dirección también si lo necesitas
       } else {
         getCurrentLocation();
       }
