@@ -175,7 +175,7 @@ export default function ZonasMapView({
     });
   };
 
-  const renderZonaCentroides = () => {
+  /* const renderZonaCentroides = () => {
     if (!zonasAUsar || zonasAUsar.length === 0) {
       return null;
     }
@@ -194,7 +194,7 @@ export default function ZonasMapView({
           pinColor={zona.es_prohibido_estacionar ? 'red' : 'blue'}
         />
       ));
-  };
+  }; */
 
   return (
     <View style={style}>
@@ -210,7 +210,7 @@ export default function ZonasMapView({
         {!loadingZonas && renderZonaPolygons()}
         
         {/* Renderizar centroides de zonas como markers */}
-        {!loadingZonas && renderZonaCentroides()}
+{/*         {!loadingZonas && renderZonaCentroides()} */}
 
         {/* Marker de ubicación del usuario (si se proporciona manualmente) */}
         {location && showUserLocation && (
