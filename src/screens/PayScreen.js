@@ -475,8 +475,7 @@ export default function PayScreen({ navigation }) {
   // ✅ Nueva función que se ejecuta al seleccionar un vehículo del modal
   const handleSeleccionarVehiculo = (vehiculo) => {
     setSelectorVehiculoVisible(false);
-    
-    // Ahora que tenemos el vehículo, mostramos la confirmación final
+
     Alert.alert(
       'Confirmar Estacionamiento',
       `¿Iniciar estacionamiento para el vehículo ${vehiculo.patente} en ${zonaDetectada?.nombre || 'esta zona'}?\n\nCosto actual: ${costoActual} por hora`,
@@ -487,10 +486,7 @@ export default function PayScreen({ navigation }) {
           onPress: async () => {
             const estacionamiento = await iniciarEstacionamientoBackend(vehiculo.id);
             if (estacionamiento) {
-              // Si se requiere pago, intentar abrir la app SEM
-              if (estacionamiento.requiere_pago) {
-                await abrirAppSEMRealMejorada(); // Usando la función que ya tenías
-              }
+              await abrirAppSEMRealMejorada(); // Siempre intenta abrir la app
               Alert.alert(
                 'Estacionamiento Iniciado',
                 'Tu estacionamiento se ha registrado correctamente.',
