@@ -340,7 +340,7 @@ const [manualAddress, setManualAddress] = useState('');
               <Text style={tw`text-xl ml-2 font-semibold text-gray-800`}>Encontrá tu auto estacionado</Text>
             </View>
           </View>
-          <View style={[tw`h-44 w-full border overflow-hidden`, sharedStyles.borderColorBlue]}>
+          <View style={[tw`h-44 w-full  overflow-hidden`]}>
             <MapView
               style={tw`flex-1`}
               region={mapRegion}
