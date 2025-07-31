@@ -346,15 +346,31 @@ export default function HomeScreen({ navigation }) {
     const horaActual = ahora.getHours();
     const diaSemana = ahora.getDay(); // 0 = domingo, 1 = lunes, ..., 6 = sábado
 
-    // Lógica simple para determinar si se requiere pago
-    // Esto debería ser más complejo basado en los horarios reales de la zona
+    // Obtener horarios formateados
+    let horariosArray = zona.horarios_formateados;
+    if (horariosArray && typeof horariosArray === 'object' && !Array.isArray(horariosArray)) {
+      horariosArray = Object.values(horariosArray);
+    }
+    if (!Array.isArray(horariosArray)) horariosArray = [];
+
+    let finHorario = null;
     if (diaSemana >= 1 && diaSemana <= 5) { // Lunes a viernes
-      if (horaActual >= 7 && horaActual < 20) {
-        return { mensaje: `Pago requerido hasta las 20:00 hs`, esActiva: true };
+      const horarioLV = horariosArray.find(h => h.includes('Lun-Vie') || h.includes('Lun-Vier'));
+      if (horarioLV) {
+        const match = horarioLV.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+        if (match) finHorario = match[2];
+      }
+      if (horaActual >= 7 && finHorario) {
+        return { mensaje: `Pago requerido hasta las ${finHorario} hs`, esActiva: true };
       }
     } else if (diaSemana === 6) { // Sábado
-      if (horaActual >= 9 && horaActual < 20) {
-        return { mensaje: `Pago requerido hasta las 20:00 hs`, esActiva: true };
+      const horarioSab = horariosArray.find(h => h.includes('Sáb') || h.includes('Sab'));
+      if (horarioSab) {
+        const match = horarioSab.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+        if (match) finHorario = match[2];
+      }
+      if (horaActual >= 9 && finHorario) {
+        return { mensaje: `Pago requerido hasta las ${finHorario} hs`, esActiva: true };
       }
     }
 
@@ -449,8 +465,8 @@ export default function HomeScreen({ navigation }) {
           <Text style={tw`text-lg font-bold text-gray-800 ml-2`}>Ubicación detectada</Text>
         </View>
         <View style={tw`flex-row items-center ml-1 mb-3`}>
-          <MaterialIcons name="my-location" size={16} color="green" style={tw`mr-2 ml-1`} />
-          <Text style={tw`text-gray-800 ml-2 flex-1`}>{address}</Text>
+          <MaterialIcons name="my-location" size={16} color="blue" style={tw`mr-2 `} />
+          <Text style={tw`text-gray-800 ml-1 flex-1`}>{address}</Text>
         </View>
         <View style={tw`flex-row items-center mx-2`}>
           <Text style={tw`text-gray-500`}>
