@@ -216,6 +216,33 @@ const [manualAddress, setManualAddress] = useState('');
     }
   };
 
+  const handleEliminarVehiculo = async (vehiculoId) => {
+    Alert.alert(
+      'Eliminar vehículo',
+      '¿Estás seguro que deseas eliminar este vehículo?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await api.delete(`/vehiculos/${vehiculoId}`);
+              if (response.data.status) {
+                Alert.alert('Éxito', 'Vehículo eliminado correctamente.');
+                cargarVehiculos();
+              } else {
+                Alert.alert('Error', response.data.message || 'No se pudo eliminar el vehículo.');
+              }
+            } catch (error) {
+              Alert.alert('Error', 'Ocurrió un error al intentar eliminar el vehículo.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const distance = userLocation && estacionamientoActivo
     ? calculateDistance(userLocation.latitude, userLocation.longitude, estacionamientoActivo.latitud, estacionamientoActivo.longitud)
     : null;
@@ -423,20 +450,28 @@ const [manualAddress, setManualAddress] = useState('');
               data={vehiculos}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
-                <TouchableOpacity
-                  onPress={() => {
-                    setVehiculoSeleccionado(item);
-                    setSelectorVisible(false);
-                  }}
-                  style={tw`p-4 border-b border-gray-200 flex-row items-center`}
-                >
-                  <Ionicons 
-                    name={item.id === vehiculoSeleccionado?.id ? 'radio-button-on' : 'radio-button-off'} 
-                    size={22} 
-                    style={tw`mr-4 ${item.id === vehiculoSeleccionado?.id ? 'text-blue-500' : 'text-gray-400'}`}
-                  />
-                  <Text style={tw`text-lg`}>{item.patente}</Text>
-                </TouchableOpacity>
+                <View style={tw`flex-row items-center justify-between p-4 border-b border-gray-200`}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setVehiculoSeleccionado(item);
+                      setSelectorVisible(false);
+                    }}
+                    style={tw`flex-row items-center flex-1`}
+                  >
+                    <Ionicons 
+                      name={item.id === vehiculoSeleccionado?.id ? 'radio-button-on' : 'radio-button-off'} 
+                      size={22} 
+                      style={tw`mr-4 ${item.id === vehiculoSeleccionado?.id ? 'text-blue-500' : 'text-gray-400'}`}
+                    />
+                    <Text style={tw`text-lg`}>{item.patente}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleEliminarVehiculo(item.id)}
+                    style={tw`ml-4 p-2`}
+                  >
+                    <Ionicons name="trash-outline" size={22} color="red" />
+                  </TouchableOpacity>
+                </View>
               )}
             />
             <TouchableOpacity
