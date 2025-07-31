@@ -620,12 +620,12 @@ export default function HomeScreen({ navigation }) {
       <View
         style={[
           tw`flex-row justify-center items-center rounded-lg p-2 mt-4 shadow ${estacionamientoActivo ? 'border border-red-500' : 'border border-gray-400'}`,
-          estacionamientoActivo ? tw`bg-red-200` : tw`bg-gray-300`
+          estacionamientoActivo ? tw`bg-red-100` : tw`bg-gray-300`
         ]}
       >
-        <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800 ${estacionamientoActivo ? 'text-red-600' : 'text-gray-600'}`} />
-        <Text style={tw`ml-1 text-gray-800 text-base font-semibold ${estacionamientoActivo ? 'text-red-600' : 'text-gray-600'}`}>
-          {estacionamientoActivo ? `Estacionamiento activo:` : 'Sin estacionamiento activo'}
+        <Ionicons name="information-circle-outline" size={24} style={tw`text-gray-800 ${estacionamientoActivo ? 'text-red-500' : 'text-gray-600'}`} />
+        <Text style={tw`ml-1 text-gray-800 text-base font-semibold ${estacionamientoActivo ? 'text-red-500' : 'text-gray-600'}`}>
+          {estacionamientoActivo ? `Estacionamiento activo` : 'Sin estacionamiento activo'}
         </Text>
       </View>
 

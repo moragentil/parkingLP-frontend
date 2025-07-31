@@ -54,10 +54,15 @@ export default function PayScreen({ navigation }) {
   // ✅ Función para finalizar el estacionamiento activo
   const finalizarEstacionamientoBackend = async () => {
     if (!estacionamientoActivo) return;
-    
+
     try {
       console.log('🚗 Finalizando estacionamiento activo:', estacionamientoActivo.id);
-      
+
+      // 1. Consultar el costo informativo antes de finalizar
+      const costoResponse = await api.get(`/estacionamientos/${estacionamientoActivo.id}/costo`);
+      const costoFinal = costoResponse.data?.costo ?? 0;
+
+      // 2. Finalizar el estacionamiento
       const response = await api.post(`/estacionamientos/${estacionamientoActivo.id}/finalizar`);
       
       if (response.data.status) {
@@ -66,10 +71,11 @@ export default function PayScreen({ navigation }) {
         
         // Opcional: Abrir app SEM después de finalizar
         await abrirAppSEMRealMejorada();
+        console.log('Costo final:', costoFinal);
         
         Alert.alert(
           'Estacionamiento Finalizado',
-          'Tu estacionamiento ha sido finalizado correctamente.',
+          `Tu estacionamiento ha sido finalizado correctamente.\nCosto total: $${costoFinal}`,
           [{ text: 'OK' }]
         );
       } else {
