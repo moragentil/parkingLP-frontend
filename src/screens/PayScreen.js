@@ -614,13 +614,13 @@ export default function PayScreen({ navigation }) {
 
         {/* Contenedor de columnas (visible solo si showDetails es true) */}
         {showDetails && (
-          <View style={tw`flex-row justify-between mt-4 mx-2`}>
+          <View style={tw`flex-row justify-between mt-4 `}>
             {/* Columna de horarios */}
             <View style={tw`items-start flex-1`}>
               <Text style={tw`text-gray-500 mb-2 font-semibold`}>Horarios de la zona</Text>
               {horariosFormateados.length > 0 ? (
                 horariosFormateados.map((horario, index) => (
-                  <Text key={index} style={tw`text-gray-700 text-sm mb-1`}>
+                  <Text key={index} style={tw`text-gray-700 font-semibold text-sm mb-1`}>
                     {horario}
                   </Text>
                 ))
@@ -639,7 +639,7 @@ export default function PayScreen({ navigation }) {
               ) : tarifasFormateadas.length > 0 ? (
                 tarifasFormateadas.map((tarifa, index) => (
                   <View key={index} style={tw`mb-1`}>
-                    <Text style={tw`text-green-600 font-semibold text-sm`}>
+                    <Text style={[tw`font-semibold text-sm`, zoneStyles.textStyle]}>
                       {tarifa.horario}: {tarifa.precio}
                     </Text>
                   </View>
