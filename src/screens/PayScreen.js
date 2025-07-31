@@ -688,7 +688,7 @@ export default function PayScreen({ navigation }) {
               tw`flex-row justify-center items-center mr-2 p-4 w-full rounded-lg`,
               // Si hay estacionamiento activo, usamos color rojo
               estacionamientoActivo 
-                ? sharedStyles.bgCustomGreen
+                ? sharedStyles.bgCustomRed
                 : (
                   zonaDetectada && !zonaDetectada.es_prohibido_estacionar && estadoZona.color === 'red' 
                     ? sharedStyles.bgCustomGreen 

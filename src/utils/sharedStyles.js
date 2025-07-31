@@ -22,6 +22,9 @@ const sharedStyles = StyleSheet.create({
   bgCustomGreenLight: {
     backgroundColor: '#1fb10b',
   },
+  bgCustomRed: {
+    backgroundColor: '#FF0000',
+  },
   bgCustomPinkLight: {
     backgroundColor: '#d9277c',
   },
