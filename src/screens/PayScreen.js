@@ -561,16 +561,16 @@ export default function PayScreen({ navigation }) {
   return (
     <ScrollView style={tw`flex-1 bg-gray-200`} contentContainerStyle={tw`px-4 pb-28 pt-4`}>
       {/* Información de la zona */}
-      <View style={[tw`bg-white rounded-lg p-4 shadow`]}>
+      <View style={[tw`bg-white rounded-lg py-4 px-3 shadow`]}>
         <View style={tw`flex-row items-center mb-2`}>
-          <Ionicons name="information-circle-outline" size={24} color="green" />
+          <Ionicons name="information-circle-outline" size={24} style={zoneStyles.textStyle} />
           <Text style={tw`text-lg font-bold text-gray-800 ml-2`}>Información de la zona</Text>
         </View>
         
         <View style={tw`flex-row justify-between items-center ml-1 mb-2`}>
           <View style={tw`flex-row items-center`}>
-            <MaterialIcons name="my-location" size={16} color="green" style={tw`mr-2 ml-1`} />
-            <Text style={tw`text-gray-800`} numberOfLines={1}>
+            <MaterialIcons name="my-location" size={16} style={zoneStyles.textStyle} />
+            <Text style={tw`text-gray-800 ml-2`} numberOfLines={1}>
               {loadingUbicacion ? 'Detectando ubicación...' : address}
             </Text>
           </View>
