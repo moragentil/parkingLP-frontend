@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const getBaseURL = () => {
   if (__DEV__) {
     // Usar tu IP real de Wi-Fi
-    const BACKEND_IP = '192.168.1.39'; // ← Esta es tu IP de Wi-Fi
+    const BACKEND_IP = '192.168.0.60'; // ← Esta es tu IP de Wi-Fi
     
     if (Platform.OS === 'android') {
       // Para emulador Android
